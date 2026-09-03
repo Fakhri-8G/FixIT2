@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Report;
+use App\Models\ReportImage;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ReportController extends Controller
@@ -19,7 +21,7 @@ class ReportController extends Controller
         try {
             $user = $request->user();
 
-            $query = Report::with(['category', 'location']);
+            $query = Report::with(['category', 'location', 'images']);
 
             if ($user->role === 'admin') {
                 $query->with('user');
@@ -43,13 +45,9 @@ class ReportController extends Controller
                 'description' => 'required|string',
                 'category_id' => 'required|exists:categories,id',
                 'location_id' => 'required|exists:locations,id',
-                'image' => 'nullable|image|max:2048',
+                'images' => 'required|array|min:1|max:5',
+                'images.*' => 'image|mimes:jpeg,png,jpg|max:2048',
             ]);
-
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('reports', 'public');
-            }
 
             $report = Report::create([
                 'user_id' => $request->user()->id,
@@ -57,11 +55,19 @@ class ReportController extends Controller
                 'location_id' => $validated['location_id'],
                 'title' => $validated['title'],
                 'description' => $validated['description'],
-                'image' => $imagePath,
                 'status' => 'reported',
             ]);
 
-            return $this->success($report, 'Laporan berhasil dibuat.', 201);
+            // simpan tiap gambar ke storage & tabel report_images
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('reports', 'public');
+
+                $report->images()->create([
+                    'image_path' => $path,
+                ]);
+            }
+
+            return $this->success($report->load('images'), 'Laporan berhasil dibuat.', 201);
         } catch (ValidationException $e) {
             return $this->error('Validasi gagal.', 422, $e->errors());
         } catch (Exception $e) {
@@ -78,7 +84,7 @@ class ReportController extends Controller
                 return $this->error('Anda tidak memiliki akses ke laporan ini.', 403);
             }
 
-            $report->load(['user', 'category', 'location', 'updates.admin']);
+            $report->load(['user', 'category', 'location', 'updates.admin', 'images']);
 
             return $this->success($report, 'Detail laporan berhasil diambil.');
         } catch (Exception $e) {
@@ -123,9 +129,33 @@ class ReportController extends Controller
                 return $this->error('Laporan ini tidak bisa dihapus.', 403);
             }
 
+             // hapus semua file gambar fisik dari storage
+            foreach ($report->images as $img) {
+                Storage::disk('public')->delete($img->image_path);
+            }
+
             $report->delete();
 
             return $this->success(null, 'Laporan berhasil dihapus.');
+        } catch (Exception $e) {
+            return $this->error('Terjadi kesalahan pada server.', 500);
+        }
+    }
+
+    // Endpoint Hapus 1 Gambar Saja
+    public function deleteImage(Request $request, ReportImage $image)
+    {
+        try {
+            $report = $image->report;
+
+            if ($report->user_id !== $request->user()->id) {
+                return $this->error('Anda tidak memiliki akses.', 403);
+            }
+
+            Storage::disk('public')->delete($image->image_path);
+            $image->delete();
+
+            return $this->success(null, 'Gambar berhasil dihapus.');
         } catch (Exception $e) {
             return $this->error('Terjadi kesalahan pada server.', 500);
         }
