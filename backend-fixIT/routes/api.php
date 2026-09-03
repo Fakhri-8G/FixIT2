@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Report bisa diakses user & admin (logic dibedakan di controller)
     Route::apiResource('reports', ReportController::class);
     Route::get('/reports/{report}/updates', [ReportUpdateController::class, 'index']);
+    Route::delete('/report-images/{image}', [ReportController::class, 'deleteImage']);
 
     // Category & Location: hanya admin yang boleh create/update/delete
     Route::get('/categories', [CategoryController::class, 'index']);
