@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Traits\ApiResponse;
 use Exception;
+use Illuminate\Http\Request;
 
 class ReportUpdateController extends Controller
 {
