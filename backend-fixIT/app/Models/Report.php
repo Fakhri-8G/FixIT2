@@ -12,7 +12,6 @@ class Report extends Model
         'location_id',
         'title',
         'description',
-        'image',
         'status'
     ];
 
@@ -31,5 +30,10 @@ class Report extends Model
     public function updates() 
     { 
         return $this->hasMany(ReportUpdate::class); 
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ReportImage::class);
     }
 }
