@@ -2,16 +2,16 @@
   <div class="auth-wrapper">
     <div class="auth-card">
       
-      <!-- Brand & Header -->
-        <header class="auth-header">
-          <div class="brand-badge">🔧 FixIT PORTAL</div>
-          <h1 class="auth-title">Masuk ke FixIT</h1>
-          <p class="auth-subtitle">Masuk dengan akun petugas atau warga sekolah untuk verifikasi pengaduan sarpras.</p>
-        </header>
+      <!-- Header / Logo -->
+      <div class="auth-header">
+        <div class="brand-logo">🔧</div>
+        <h1 class="auth-title">Masuk ke FixIT</h1>
+        <p class="auth-subtitle">Masuk dengan akun petugas atau warga sekolah untuk verifikasi pengaduan sarpras.</p>
+      </div>
 
       <!-- Alert Pesan Error -->
       <transition name="fade">
-        <div v-if="authError" class="alert-banner">
+        <div v-if="authError" class="alert alert-error">
           <span class="alert-icon">⚠️</span>
           <div class="alert-content">
             <strong>Gagal Otentikasi</strong>
@@ -23,16 +23,16 @@
       <!-- Form Login -->
       <form @submit.prevent="executeLogin" class="auth-form" novalidate>
         
-        <!-- Input Identitas (NIP / NISN / Email) -->
-        <div class="field-group">
-          <label for="identity">Email </label>
+        <!-- Input Identitas -->
+        <div class="form-group">
+          <label for="identity">Email / Identitas</label>
           <div class="input-wrapper">
             <span class="input-icon">👤</span>
             <input
               id="identity"
               v-model.trim="credentials.identity"
               type="text"
-              placeholder="Contoh: 19820310... / admin@gmail.com"
+              placeholder="Contoh: admin@gmail.com / 19820310..."
               required
               :disabled="isSubmitting"
             />
@@ -40,7 +40,7 @@
         </div>
 
         <!-- Input Password + Toggle Eye -->
-        <div class="field-group">
+        <div class="form-group">
           <div class="label-row">
             <label for="password">Kata Sandi</label>
             <a href="#" class="forgot-link" @click.prevent="alertLupaPassword">Lupa sandi?</a>
@@ -66,11 +66,10 @@
           </div>
         </div>
 
-        <!-- Checkbox Remember / Keep Active -->
+        <!-- Checkbox Remember -->
         <div class="options-row">
           <label class="checkbox-container">
             <input type="checkbox" v-model="rememberMe" />
-            <span class="checkmark"></span>
             Ingat sesi saya di perangkat ini
           </label>
         </div>
@@ -81,17 +80,21 @@
           class="btn-submit" 
           :disabled="isSubmitting || !isFormValid"
         >
-          <span v-if="isSubmitting" class="loader-inline"></span>
+          <span v-if="isSubmitting" class="spinner"></span>
           <span>{{ isSubmitting ? 'Verifikasi Hak Akses...' : 'Masuk Portal Sistem' }}</span>
         </button>
 
       </form>
 
-      <!-- Footer Info -->
-        <footer class="auth-footer">
-          <RouterLink to="/" class="nav-back">← Kembali ke Feed FixIT Public</RouterLink>
-          <p class="help-text">Kendala akun? Hubungi Tim IT / Admin FixIT Sekolah.</p>
-        </footer>
+      <!-- Footer / Link ke Feed & Register -->
+      <div class="auth-footer">
+        <RouterLink to="/" class="nav-back">← Kembali ke Feed FixIT Public</RouterLink>
+        <p class="register-hint">
+          Belum punya akun? 
+          <RouterLink to="/register" class="auth-link">Daftar sekarang</RouterLink>
+        </p>
+        <p class="help-text">Kendala akun? Hubungi Tim IT / Admin FixIT Sekolah.</p>
+      </div>
 
     </div>
   </div>
@@ -100,7 +103,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import api from '../utils/api' // Pake instance axios terpusat, JANGAN panggil axios mentah lagi
+import api from '../../utils/api'
 
 const router = useRouter()
 
@@ -115,15 +118,14 @@ const showPassword = ref(false)
 const rememberMe   = ref(false)
 const authError    = ref('')
 
-// Computed validation biar tombol gak bisa diklik kalau form masih kosong
 const isFormValid = computed(() => {
-  return credentials.identity.length > 3 && credentials.password.length >= 4
+  return credentials.identity.trim().length >= 3 && credentials.password.length >= 4
 })
 
-// Auto-redirect jika token sudah tersimpan
 onMounted(() => {
   const existingToken = localStorage.getItem('token')
   if (existingToken) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${existingToken}`
     redirectBasedOnRole()
   }
 })
@@ -136,31 +138,29 @@ const executeLogin = async () => {
   authError.value = ''
 
   try {
-    // API Call terpusat — backend yang bagus bakal return { token, user } sekaligus!
     const response = await api.post('/login', {
-      email: credentials.identity, // disesuaikan dengan key backend
+      email: credentials.identity.trim(),
       password: credentials.password
     })
 
-    const { token, user } = response.data
+    const resData = response.data?.data || response.data
+    const token = resData?.token || response.data?.token
+    const user = resData?.user || response.data?.user
 
     if (!token) {
-      throw new Error('Respon API tidak valid: Token tidak ditemukan.')
+      throw new Error('Respon API tidak valid: Token otentikasi tidak ditemukan.')
     }
 
-    // Storage Management
     localStorage.setItem('token', token)
     if (user) {
       localStorage.setItem('user', JSON.stringify(user))
     }
 
-    // Set header default axios di utils/api.js agar request selanjutnya ter-authorize
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-
-    // Arahkan user
     redirectBasedOnRole(user)
 
   } catch (err) {
+    console.error('DEBUG LOGIN ERROR:', err)
     handleErrorResponse(err)
   } finally {
     isSubmitting.value = false
@@ -170,36 +170,50 @@ const executeLogin = async () => {
 // ─── Utility Methods ────────────────────────────────────────
 const handleErrorResponse = (err) => {
   if (!err.response) {
-    authError.value = 'Tidak dapat terhubung ke server FixIT. Periksa koneksi internet/server.'
+    authError.value = err.message || 'Tidak dapat terhubung ke server. Periksa koneksi internet atau CORS backend.'
     return
   }
 
   const status = err.response.status
-  const serverMsg = err.response.data?.message
+  const serverMsg = err.response.data?.message || err.response.data?.error
 
   switch (status) {
     case 401:
       authError.value = serverMsg || 'Kredensial salah. Periksa kembali Email dan Kata Sandi!'
       break
     case 404:
-      authError.value = 'Akun tidak terdaftar dalam database inventaris sekolah.'
+      authError.value = 'Endpoint login tidak ditemukan atau akun tidak terdaftar.'
       break
     case 422:
-      authError.value = 'Format inputan tidak sesuai standar sistem.'
+      const validationErrors = err.response.data?.errors
+      if (validationErrors) {
+        const firstKey = Object.keys(validationErrors)[0]
+        authError.value = validationErrors[firstKey][0]
+      } else {
+        authError.value = serverMsg || 'Format inputan tidak sesuai standar sistem.'
+      }
       break
     case 429:
       authError.value = 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.'
       break
     default:
-      authError.value = serverMsg || 'Terjadi kesalahan sistem. Hubungi administrator.'
+      authError.value = serverMsg || `Terjadi kesalahan sistem (Status Code: ${status}).`
   }
 }
 
 const redirectBasedOnRole = (userObj = null) => {
-  const user = userObj || JSON.parse(localStorage.getItem('user') || '{}')
-  
-  // Custom routing sesuai role pengaduan FixIT
-  if (user.role === 'admin' || user.role === 'teknisi') {
+  let user = userObj
+  if (!user) {
+    try {
+      user = JSON.parse(localStorage.getItem('user') || '{}')
+    } catch {
+      user = {}
+    }
+  }
+
+  const role = user?.role ? String(user.role).toLowerCase() : ''
+
+  if (role === 'admin' || role === 'petugas') {
     router.push('/admin/dashboard-kerusakan')
   } else {
     router.push('/dashboard')
@@ -212,70 +226,120 @@ const alertLupaPassword = () => {
 </script>
 
 <style scoped>
-/* Industrial / Utility Palette */
+/* Wrapper (Senada Register) */
 .auth-wrapper {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a202c; /* Slate Dark */
-  background-image: radial-gradient(#2d3748 1px, transparent 1px);
-  background-size: 20px 20px;
-  padding: 20px;
-  font-family: system-ui, -apple-system, sans-serif;
+  padding: 24px 16px;
+  background-color: transparent;
 }
 
+/* Auth Card */
 .auth-card {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 36px 32px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 32px 24px;
   width: 100%;
-  max-width: 440px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  border-top: 5px solid #2b6cb0; /* Highlight Accent */
+  max-width: 420px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 /* Header */
-.auth-header { margin-bottom: 24px; text-align: left; }
-.brand-badge {
-  display: inline-block;
-  background: #ebf8ff;
-  color: #2b6cb0;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 4px;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
 }
-.auth-title { font-size: 22px; font-weight: 800; color: #1a202c; line-height: 1.2; }
-.auth-subtitle { font-size: 13px; color: #718096; margin-top: 6px; line-height: 1.4; }
 
-/* Alert */
-.alert-banner {
+.brand-logo {
+  font-size: 36px;
+  margin-bottom: 8px;
+  display: inline-block;
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #334155;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Alert Box Error */
+.alert {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  background: #fff5f5;
-  border: 1px solid #feb2b2;
-  border-radius: 8px;
+  gap: 10px;
   padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   margin-bottom: 20px;
-  color: #9b2c2c;
 }
-.alert-icon { font-size: 16px; }
-.alert-content strong { display: block; font-size: 13px; }
-.alert-content p { font-size: 12px; margin-top: 2px; }
 
-/* Form Elements */
-.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.alert-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
 
-.field-group { display: flex; flex-direction: column; gap: 6px; }
+.alert-content strong {
+  display: block;
+  font-size: 13px;
+  color: #f87171;
+}
 
-.label-row { display: flex; justify-content: space-between; align-items: center; }
-label { font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.5px; }
-.forgot-link { font-size: 12px; color: #3182ce; text-decoration: none; font-weight: 600; }
-.forgot-link:hover { text-decoration: underline; }
+.alert-content p {
+  font-size: 12px;
+  margin-top: 2px;
+  color: #fca5a5;
+}
+
+/* Form Controls */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.forgot-link {
+  font-size: 12px;
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
 
 .input-wrapper {
   position: relative;
@@ -288,100 +352,153 @@ label { font-size: 12px; font-weight: 700; color: #4a5568; text-transform: upper
   left: 12px;
   font-size: 14px;
   pointer-events: none;
+  color: #64748b;
 }
 
 .input-wrapper input {
   width: 100%;
-  padding: 10px 38px 10px 36px;
-  border: 1.5px solid #cbd5e0;
-  border-radius: 6px;
+  padding: 11px 12px 11px 38px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  color: #ffffff;
   font-size: 14px;
-  color: #2d3748;
   outline: none;
   transition: all 0.2s ease;
 }
 
+.input-wrapper input::placeholder {
+  color: #64748b;
+}
+
 .input-wrapper input:focus {
-  border-color: #3182ce;
-  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .toggle-password {
   position: absolute;
-  right: 10px;
+  right: 12px;
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
-  padding: 4px;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
-/* Checkbox */
-.options-row { display: flex; align-items: center; }
+.toggle-password:hover {
+  opacity: 1;
+}
+
+/* Options / Checkbox */
+.options-row {
+  display: flex;
+  align-items: center;
+}
+
 .checkbox-container {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #718096;
+  color: #94a3b8;
   cursor: pointer;
   user-select: none;
 }
 
-/* Buttons & State */
+/* Submit Button & Spinner */
 .btn-submit {
-  background: #2b6cb0;
-  color: white;
+  margin-top: 6px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
   border: none;
-  border-radius: 6px;
   padding: 12px;
-  font-size: 14px;
+  border-radius: 10px;
   font-weight: 700;
+  font-size: 14px;
   cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: background 0.2s;
 }
 
-.btn-submit:hover:not(:disabled) { background: #2c5282; }
-.btn-submit:disabled { background: #a0aec0; cursor: not-allowed; opacity: 0.7; }
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
 
-/* Inline Spinner Loader */
-.loader-inline {
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #ffffff;
-  border-bottom-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
-  display: inline-block;
-  animation: rotation 1s linear infinite;
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes rotation {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Footer */
+/* Footer Link */
 .auth-footer {
-  margin-top: 28px;
-  border-top: 1px solid #edf2f7;
-  padding-top: 16px;
+  margin-top: 24px;
   text-align: center;
+  border-top: 1px solid #334155;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .nav-back {
   display: inline-block;
   font-size: 13px;
-  color: #4a5568;
+  color: #94a3b8;
   text-decoration: none;
   font-weight: 600;
-  margin-bottom: 8px;
+  transition: color 0.2s;
 }
-.nav-back:hover { color: #2b6cb0; }
-.help-text { font-size: 11px; color: #a0aec0; }
+
+.nav-back:hover {
+  color: #ffffff;
+}
+
+.register-hint {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.auth-link {
+  color: #60a5fa;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+
+.auth-link:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.help-text {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
 
 /* Transitions */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }

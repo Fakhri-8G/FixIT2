@@ -1,100 +1,168 @@
 <template>
   <!-- ═══════════════════════════════════════════════════
-       TAMPILAN GUEST (belum login) → Navbar di atas
+       1. TAMPILAN GUEST (BELUM LOGIN) - Modern Top Navbar
        ═══════════════════════════════════════════════════ -->
   <template v-if="!isLoggedIn">
-    <nav class="navbar">
-      <div class="navbar-brand">
-        <RouterLink to="/">🔧 FixIT </RouterLink>
-      </div>
+    <header class="guest-header">
+      <nav class="guest-navbar">
+        <RouterLink to="/" class="guest-brand">
+          <div class="brand-logo">🛠️</div>
+          <span class="brand-name">Fix<span class="highlight">IT</span></span>
+        </RouterLink>
 
-      <div class="navbar-menu">
-        <RouterLink to="/"> Beranda</RouterLink>
-        <RouterLink to="/cara-kerja">Cara Kerja</RouterLink>
-        <RouterLink to="/tentang">Tentang</RouterLink>
-        <RouterLink to="/kontak">Kontak</RouterLink>
-        <RouterLink to="/login" class="btn-nav-login">Login</RouterLink>
-      </div>
-    </nav>
+        <div class="guest-menu">
+          <RouterLink to="/" class="guest-link">Beranda</RouterLink>
+          <RouterLink to="/cara-kerja" class="guest-link">Cara Kerja</RouterLink>
+          <RouterLink to="/tentang" class="guest-link">Tentang</RouterLink>
+          <RouterLink to="/kontak" class="guest-link">Kontak</RouterLink>
+        </div>
 
-    <RouterView />
+        <!-- DIGABUNG DUA BUTTON NYA DENGAN GAP 8px -->
+        <div class="guest-actions">
+          <RouterLink to="/login" class="btn-login">
+            <span>Masuk</span>
+          </RouterLink>
+          <RouterLink to="/register" class="btn-register">
+            <span>Daftar</span>
+            <span class="arrow">→</span>
+          </RouterLink>
+        </div>
+      </nav>
+    </header>
+
+    <main class="guest-container">
+      <RouterView />
+    </main>
   </template>
 
   <!-- ═══════════════════════════════════════════════════
-       TAMPILAN SUDAH LOGIN (siswa / admin) → Sidebar kiri
+       2. TAMPILAN LOGGED IN (SISWA / ADMIN) - Full App Shell
        ═══════════════════════════════════════════════════ -->
-  <div v-else class="app-shell">
-    <aside class="sidebar" :class="{ 'sidebar-admin': isAdmin }">
-      <div class="sidebar-brand">
-        <span class="brand-icon">🔧</span>
-        <span class="brand-text">FixIT</span>
+  <div v-else class="app-layout" :class="{ 'sidebar-collapsed': isCollapsed }">
+    <!-- Overlay Mobile Backdrop -->
+    <div 
+      v-if="isMobileOpen" 
+      class="mobile-backdrop" 
+      @click="isMobileOpen = false"
+    ></div>
+
+    <!-- ── SIDEBAR ────────────────────────────────────────── -->
+    <aside 
+      class="app-sidebar" 
+      :class="{ 
+        'is-admin': isAdmin, 
+        'mobile-show': isMobileOpen 
+      }"
+    >
+      <div class="sidebar-header">
+        <div class="brand-box">
+          <div class="brand-logo">🛠️</div>
+          <span class="brand-text">Fix<span class="highlight">IT</span></span>
+        </div>
+        <span v-if="isAdmin" class="admin-badge">ADMIN</span>
       </div>
 
-      <nav class="sidebar-menu">
-        <!-- Menu SISWA -->
-        <template v-if="!isAdmin">
-          <RouterLink to="/dashboard" class="menu-item">
-            <span class="menu-icon">🏠</span> Dashboard
-          </RouterLink>
-          <RouterLink to="/buat-laporan" class="menu-item">
-            <span class="menu-icon">📝</span> Buat Laporan
-          </RouterLink>
-          <RouterLink to="/laporan-saya" class="menu-item">
-            <span class="menu-icon">📋</span> Laporan Saya
-          </RouterLink>
-          <RouterLink to="/profile" class="menu-item">
-            <span class="menu-icon">👤</span> Profile
-          </RouterLink>
-        </template>
+      <!-- Menu Section -->
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <span class="group-label">MENU UTAMA</span>
+          
+          <!-- Menu Siswa -->
+          <template v-if="!isAdmin">
+            <RouterLink to="/dashboard" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">🏠</span>
+              <span class="nav-label">Dashboard</span>
+            </RouterLink>
+            <RouterLink to="/buat-laporan" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">➕</span>
+              <span class="nav-label">Buat Laporan</span>
+            </RouterLink>
+            <RouterLink to="/laporan-saya" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📂</span>
+              <span class="nav-label">Laporan Saya</span>
+            </RouterLink>
+          </template>
 
-        <!-- Menu ADMIN -->
-        <template v-else>
-          <RouterLink to="/dashboard" class="menu-item">
-            <span class="menu-icon">🏠</span> Dashboard
+          <!-- Menu Admin -->
+          <template v-else>
+            <RouterLink to="/dashboard" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📊</span>
+              <span class="nav-label">Dashboard</span>
+            </RouterLink>
+            <RouterLink to="/semua-laporan" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📑</span>
+              <span class="nav-label">Semua Laporan</span>
+            </RouterLink>
+            <RouterLink to="/kategori" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">🗂️</span>
+              <span class="nav-label">Kategori</span>
+            </RouterLink>
+            <RouterLink to="/lokasi" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📍</span>
+              <span class="nav-label">Lokasi Ruangan</span>
+            </RouterLink>
+            <RouterLink to="/pengguna" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">👥</span>
+              <span class="nav-label">Kelola Pengguna</span>
+            </RouterLink>
+          </template>
+        </div>
+
+        <div class="nav-group">
+          <span class="group-label">PENGATURAN</span>
+          <RouterLink to="/profile" class="nav-item" @click="closeMobile">
+            <span class="nav-icon">👤</span>
+            <span class="nav-label">Profil Saya</span>
           </RouterLink>
-          <RouterLink to="/semua-laporan" class="menu-item">
-            <span class="menu-icon">📋</span> Semua Laporan
-          </RouterLink>
-          <RouterLink to="/kategori" class="menu-item">
-            <span class="menu-icon">🗂️</span> Kategori
-          </RouterLink>
-          <RouterLink to="/lokasi" class="menu-item">
-            <span class="menu-icon">📍</span> Lokasi
-          </RouterLink>
-          <RouterLink to="/pengguna" class="menu-item">
-            <span class="menu-icon">👥</span> Pengguna
-          </RouterLink>
-          <RouterLink to="/profile" class="menu-item">
-            <span class="menu-icon">👤</span> Profile
-          </RouterLink>
-        </template>
+        </div>
       </nav>
 
-      <button @click="handleLogout" class="btn-sidebar-logout">
-        <span class="menu-icon">🚪</span> Keluar
-      </button>
+      <!-- Sidebar Footer / Logout Button -->
+      <div class="sidebar-footer">
+        <button @click="handleLogout" class="btn-logout">
+          <span class="nav-icon">🚪</span>
+          <span class="nav-label">Keluar Sesi</span>
+        </button>
+      </div>
     </aside>
 
-    <div class="main-area">
-      <header class="topbar">
-        <button class="hamburger" @click="sidebarOpen = !sidebarOpen">☰</button>
+    <!-- ── MAIN AREA ──────────────────────────────────────── -->
+    <div class="app-main">
+      <!-- TOPBAR HEADER -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="toggle-btn" @click="toggleSidebar" title="Toggle Sidebar">
+            ☰
+          </button>
+          <div class="breadcrumb">
+            <span class="system-status">● Realtime Sync</span>
+          </div>
+        </div>
+
         <div class="topbar-right">
-          <button class="btn-bell">🔔</button>
-          <div class="user-chip">
+          <button class="btn-icon-action" title="Notifikasi">
+            🔔
+            <span class="dot-indicator"></span>
+          </button>
+
+          <div class="divider"></div>
+
+          <div class="user-profile-chip">
             <img
-              class="avatar"
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=fixit"
-              alt="avatar"
+              class="avatar-img"
+              :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || 'user'}`"
+              alt="User Avatar"
             />
-            <div class="user-info">
-              <span class="user-name">{{ userName }}</span>
-              <span class="user-role">{{ isAdmin ? 'Administrator' : 'Siswa' }}</span>
+            <div class="user-details">
+              <span class="user-display-name">{{ userName || 'Pengguna' }}</span>
+              <span class="user-role-badge">{{ isAdmin ? 'Administrator' : 'Siswa / Pelapor' }}</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main class="page-content">
+      <!-- PAGE CONTENT INJECTION -->
+      <main class="app-content">
         <RouterView />
       </main>
     </div>
@@ -106,384 +174,571 @@ import { ref, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 import api from './utils/api'
 
-const router     = useRouter()
-const route      = useRoute()
-const isLoggedIn = ref(false)
-const isAdmin    = ref(false)
-const userName   = ref('')
-const sidebarOpen = ref(true)
+const router = useRouter()
+const route = useRoute()
 
-// ─── Fungsi cek status login & role dari localStorage ──────
+const isLoggedIn = ref(false)
+const isAdmin = ref(false)
+const userName = ref('')
+
+const isCollapsed = ref(false)
+const isMobileOpen = ref(false)
+
 const cekStatusLogin = () => {
   const token = localStorage.getItem('token')
-  const user  = localStorage.getItem('user')
+  const user = localStorage.getItem('user')
 
   if (token && user) {
     try {
       const parsedUser = JSON.parse(user)
       isLoggedIn.value = true
-      userName.value   = parsedUser.name
-      isAdmin.value    = parsedUser.role === 'admin'
+      userName.value = parsedUser.name || parsedUser.username
+      isAdmin.value = parsedUser.role === 'admin'
     } catch (e) {
       isLoggedIn.value = false
     }
   } else {
     isLoggedIn.value = false
-    isAdmin.value    = false
-    userName.value   = ''
+    isAdmin.value = false
+    userName.value = ''
   }
 }
 
-// Cek saat app pertama kali dibuka
-onMounted(() => { cekStatusLogin() })
+onMounted(() => {
+  cekStatusLogin()
+})
 
-// Cek ulang setiap kali URL berubah → sidebar/navbar langsung update!
-watch(() => route.path, () => { cekStatusLogin() })
+watch(() => route.path, () => {
+  cekStatusLogin()
+})
 
-// ─── Fungsi Logout ───────────────────────────────────────────
+const toggleSidebar = () => {
+  if (window.innerWidth <= 1024) {
+    isMobileOpen.value = !isMobileOpen.value
+  } else {
+    isCollapsed.value = !isCollapsed.value
+  }
+}
+
+const closeMobile = () => {
+  isMobileOpen.value = false
+}
+
 const handleLogout = async () => {
   try {
-    await api.post('/logout')   // Hapus token di server
+    await api.post('/logout')
   } catch (err) {
     console.warn('Logout API error:', err)
   } finally {
-    localStorage.removeItem('token')   // Hapus token di browser
+    localStorage.removeItem('token')
     localStorage.removeItem('user')
 
-    isLoggedIn.value = false           // Update tampilan
-    isAdmin.value    = false
-    userName.value   = ''
+    isLoggedIn.value = false
+    isAdmin.value = false
+    userName.value = ''
 
-    router.push('/login')              // Redirect ke login
+    router.push('/login')
   }
 }
 </script>
 
 <style>
-/* ═══════════════════════════════════════════
-   RESET & BASE STYLE
-   ═══════════════════════════════════════════ */
-body {
-  margin: 0;
-  padding: 20px;
-  background: linear-gradient(135deg, #0062ff 0%, #00c6ff 100%) !important;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  min-height: 100vh;
-  box-sizing: border-border-box;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+/* ════════════════════════════════════════════════════════════
+   SYSTEM RESET & DESIGN TOKENS
+   ════════════════════════════════════════════════════════════ */
+:root {
+  --bg-main: #0b0f19;
+  --bg-surface: #1e293b;
+  --sidebar-bg: #0f172a;
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 78px;
+  --topbar-height: 68px;
+  
+  --primary: #3b82f6;
+  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --primary-hover: #1d4ed8;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #334155;
 }
 
-/* ═══════════════════════════════════════════
-   NAVBAR (Guest)
-   ═══════════════════════════════════════════ */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 36px;
-  background: #ffffff !important;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ════════════════════════════════════════════════════════════
+   1. GUEST LAYOUT
+   ════════════════════════════════════════════════════════════ */
+.guest-header {
   position: sticky;
-  top: 20px;
+  top: 0;
   z-index: 100;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.guest-navbar {
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.navbar-brand a {
-  color: #0f172a !important;
-  font-size: 20px;
-  font-weight: 800;
-  text-decoration: none;
-  letter-spacing: -0.5px;
-}
-
-.navbar-menu {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-}
-
-.navbar-menu a {
-  color: #64748b !important;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.navbar-menu a:hover,
-.navbar-menu a.router-link-active {
-  color: #0088ff !important;
-}
-
-.btn-nav-login {
-  background: #0088ff !important;
-  color: #ffffff !important;
-  padding: 10px 24px;
-  border-radius: 12px;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 14px rgba(0, 136, 255, 0.35);
-  transition: all 0.2s ease !important;
-}
-
-.btn-nav-login:hover {
-  background: #0070d2 !important;
-  transform: translateY(-1px);
-}
-
-/* ═══════════════════════════════════════════
-   APP SHELL (Logged in: Siswa / Admin)
-   ── Visual Floating Container khas FinTech ──
-   ═══════════════════════════════════════════ */
-.app-shell {
-  display: flex;
-  width: 100%;
-  max-width: 1440px;
-  min-height: 88vh;
-  background: #f8fafc !important;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 30, 80, 0.25) !important;
-  margin: auto;
-}
-
-/* ── Sidebar ───────────────────────────────── */
-.sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: #ffffff !important;
-  border-right: 1px solid #e2e8f0 !important;
-  display: flex;
-  flex-direction: column;
-  padding: 28px 18px;
-  box-sizing: border-box;
-}
-
-.sidebar.sidebar-admin {
-  background: #0f172a !important; /* Elegant Dark Slate untuk Admin */
-  border-right: none !important;
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 8px 32px 8px;
-  font-size: 20px;
-  font-weight: 800;
-  color: #0088ff !important;
-  letter-spacing: -0.5px;
-}
-
-.sidebar-admin .sidebar-brand {
-  color: #ffffff !important;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  color: #64748b !important;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.sidebar-admin .menu-item {
-  color: #94a3b8 !important;
-}
-
-.menu-item:hover {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-}
-
-.sidebar-admin .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: #ffffff !important;
-}
-
-/* Active State khas Gambar (Soft Blue pill dengan teks/icon terang) */
-.menu-item.router-link-active {
-  background: #e0f2fe !important;
-  color: #0088ff !important;
-  font-weight: 700;
-}
-
-.sidebar-admin .menu-item.router-link-active {
-  background: #0088ff !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3);
-}
-
-.menu-icon {
-  font-size: 16px;
-  width: 18px;
-  text-align: center;
-}
-
-.btn-sidebar-logout {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border: none;
-  background: transparent;
-  color: #ef4444 !important;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 12px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  margin-top: auto;
-}
-
-.btn-sidebar-logout:hover {
-  background: #fef2f2 !important;
-}
-
-.sidebar-admin .btn-sidebar-logout:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-}
-
-/* ── Main Area ─────────────────────────────── */
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: #f8fafc !important;
-}
-
-.topbar {
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 36px;
-  background: transparent !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 0 24px;
 }
 
-.hamburger {
-  display: none;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 8px 12px;
+.guest-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-logo {
+  font-size: 22px;
+  background: #1e293b;
+  border: 1px solid var(--border-color);
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.brand-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.highlight {
+  color: var(--primary);
+}
+
+.guest-menu {
+  display: flex;
+  gap: 32px;
+}
+
+.guest-link {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.guest-link:hover,
+.guest-link.router-link-active {
+  color: #ffffff;
+}
+
+/* FIX tombol Login & Register bersisian pas */
+.guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-login {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 9px 18px;
   border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-login:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #64748b;
+}
+
+.btn-register {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-gradient);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.btn-register:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+}
+
+.guest-container {
+  width: 100%;
+  padding: 32px 24px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   2. APP SHELL LAYOUT (FULL WIDTH LAYOUT)
+   ════════════════════════════════════════════════════════════ */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%; /* Hapus 100vw biar ga bikin bug horizontal scroll */
+  background-color: var(--bg-main);
+}
+
+/* ── SIDEBAR STYLING ──────────────────────────────────────── */
+.app-sidebar {
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-header {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brand-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.brand-text {
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+}
+
+.admin-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 24px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0 12px 8px 12px;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.nav-item.router-link-active {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-footer {
+  padding: 16px 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
+  color: #f87171;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ── COLLAPSED SIDEBAR STATE ──────────────────────────────── */
+.sidebar-collapsed .app-sidebar {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar-collapsed .brand-text,
+.sidebar-collapsed .admin-badge,
+.sidebar-collapsed .group-label,
+.sidebar-collapsed .nav-label {
+  display: none;
+}
+
+.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 12px;
+}
+
+.sidebar-collapsed .app-main {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ── MAIN CONTENT AREA (FIX FULL LAYAR) ──────────────────── */
+.app-main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: calc(100% - var(--sidebar-width)); /* Biar full ngisi sisa space */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-topbar {
+  height: var(--topbar-height);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  width: 100%;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toggle-btn {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+.system-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-left: auto;
 }
 
-.btn-bell {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #64748b !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.btn-icon-action {
+  position: relative;
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 16px;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s;
 }
 
-.btn-bell:hover {
-  color: #0088ff !important;
-  border-color: #0088ff !important;
+.btn-icon-action:hover {
+  background: #334155;
 }
 
-.user-chip {
+.dot-indicator {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+}
+
+.user-profile-chip {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 16px 6px 6px;
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  padding: 6px 14px 6px 8px;
   border-radius: 30px;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 }
 
-.avatar {
-  width: 36px;
-  height: 36px;
+.avatar-img {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #e0f2fe !important;
+  background: #334155;
   object-fit: cover;
 }
 
-.user-info {
+.user-details {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
 }
 
-.user-name {
+.user-display-name {
   font-size: 13px;
   font-weight: 700;
-  color: #0f172a !important;
+  color: #ffffff;
 }
 
-.user-role {
+.user-role-badge {
   font-size: 11px;
+  color: var(--text-muted);
   font-weight: 500;
-  color: #94a3b8 !important;
 }
 
-.page-content {
+/* FIX APP CONTENT AGAR FULL LAYAR & NGASEMBUNYIIN SCROLL GAK CLEAR */
+.app-content {
   flex: 1;
-  padding: 36px;
-  overflow-y: auto;
-  background: #f8fafc !important;
+  padding: 24px;
+  background: var(--bg-main);
+  width: 100%;
 }
 
-/* ── Responsive ────────────────────────────── */
-@media (max-width: 992px) {
-  body {
-    padding: 0;
-  }
-  .app-shell {
-    border-radius: 0;
-    min-height: 100vh;
-  }
-  .hamburger {
-    display: block;
-  }
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    z-index: 200;
+/* Responsive Mobile Breakpoint */
+@media (max-width: 1024px) {
+  .app-sidebar {
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
+  }
+  
+  .app-sidebar.mobile-show {
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .app-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 15, 25, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 95;
+  }
+
+  .guest-menu {
+    display: none;
   }
 }
 </style>
