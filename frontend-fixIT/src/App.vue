@@ -85,7 +85,7 @@
 
           <!-- Menu Admin -->
           <template v-else>
-            <RouterLink to="/dashboard" class="nav-item" @click="closeMobile">
+            <RouterLink to="admin/dashboard-kerusakan" class="nav-item" @click="closeMobile">
               <span class="nav-icon">📊</span>
               <span class="nav-label">Dashboard</span>
             </RouterLink>
