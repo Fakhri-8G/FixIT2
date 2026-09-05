@@ -91,7 +91,7 @@
         <div class="card-header">
           <div class="header-left">
             <span class="report-id">#FIX-{{ item.id }}</span>
-            <span class="location-tag">📍 {{ item.lokasi_ruangan }}</span>
+            <span class="location-tag">📍 {{ item.location?.name }}</span>
           </div>
           <span :class="['badge-priority', `priority-${item.tingkat_urgensi}`]">
             {{ formatUrgensi(item.tingkat_urgensi) }}
@@ -102,8 +102,8 @@
         <div class="card-body">
           <div class="img-wrapper">
             <img 
-              :src="item.foto_bukti || '/placeholder-broken.png'" 
-              :alt="item.nama_barang"
+              :src="item.images?.[0]?.image_url || '/placeholder-broken.png'" 
+              :alt="item.title"
               loading="lazy" 
             />
             <span :class="['status-pill', `status-${item.status}`]">
@@ -112,18 +112,18 @@
           </div>
 
           <div class="content-wrapper">
-            <h3 class="item-name">{{ item.nama_barang }}</h3>
-            <p class="description">{{ item.deskripsi_kerusakan }}</p>
+            <h3 class="item-name">{{ item.title }}</h3>
+            <p class="description">{{ item.description }}</p>
 
             <div class="meta-info">
-              <span>👤 Pelapor: <strong>{{ item.nama_pelapor }}</strong></span>
+              <span>👤 Pelapor: <strong>{{ item.user?.name }}</strong></span>
               <span>📅 {{ formatTanggal(item.created_at) }}</span>
             </div>
 
             <!-- Catatan Teknisi (Jika sudah ada) -->
-            <div v-if="item.catatan_teknisi" class="tech-note-box">
+            <div v-if="item.updates?.length" class="tech-note-box">
               <strong>📝 Catatan Petugas sebelumnya:</strong>
-              <p>{{ item.catatan_teknisi }}</p>
+              <p>{{ item.updates[item.updates.length - 1].note || '(tidak ada catatan)' }}</p>
             </div>
           </div>
         </div>
@@ -139,9 +139,11 @@
                 :disabled="updatingId === item.id"
                 class="select-status"
               >
-                <option value="pending">⏳ Menunggu Antrean</option>
-                <option value="proses">🔨 Dalam Perbaikan</option>
-                <option value="selesai">✅ Selesai Dikerjakan</option>
+                <option value="reported">⏳ Dilaporkan</option>
+                <option value="verified">🔍 Diverifikasi</option>
+                <option value="processing">🔨 Dalam Perbaikan</option>
+                <option value="completed">✅ Selesai Dikerjakan</option>
+                <option value="rejected">❌ Ditolak</option>
               </select>
             </div>
 
@@ -149,7 +151,7 @@
               class="btn-note" 
               @click="bukaModalCatatan(item)"
             >
-              ✏️ {{ item.catatan_teknisi ? 'Edit Catatan' : '+ Catatan Teknisi' }}
+              ✏️ {{ item.updates?.length ? 'Edit Catatan' : '+ Catatan Teknisi' }}
             </button>
           </div>
         </div>
@@ -167,7 +169,7 @@
     <div v-if="activeReportForNote" class="modal-backdrop" @click.self="activeReportForNote = null">
       <div class="modal-card">
         <button class="modal-close" @click="activeReportForNote = null">✕</button>
-        <h3>Catatan Teknisi: {{ activeReportForNote.nama_barang }}</h3>
+        <h3>Catatan Teknisi: {{ activeReportForNote.title }}</h3>
         <p class="modal-sub">Berikan keterangan proses pengerjaan, estimasi, atau info penggantian sparepart.</p>
         
         <form @submit.prevent="simpanCatatanTeknisi">
@@ -219,9 +221,11 @@ const stats = reactive({
 
 const listStatus = [
   { label: 'Semua Antrean', value: 'semua' },
-  { label: 'Menunggu', value: 'pending' },
-  { label: 'Diproses', value: 'proses' },
-  { label: 'Selesai', value: 'selesai' }
+  { label: 'Dilaporkan',    value: 'reported' },
+  { label: 'Diverifikasi',  value: 'verified' },
+  { label: 'Diproses',      value: 'processing' },
+  { label: 'Selesai',       value: 'completed' },
+  { label: 'Ditolak',       value: 'rejected' }
 ]
 
 // ─── Fetch Admin Data & Stats ──────────────────────────────
@@ -231,14 +235,9 @@ const fetchLaporanAdmin = async () => {
 
   try {
     // Dipanggil menggunakan endpoint admin (dengan Authorization Header terpasang)
-    const response = await api.get('/admin/laporan-kerusakan', {
-      params: {
-        keyword: searchQuery.value.trim() || undefined,
-        status: statusSelected.value !== 'semua' ? statusSelected.value : undefined
-      }
-    })
+    const response = await api.get('/reports')
 
-    const rawData = response.data?.data?.data || response.data?.data || []
+    const rawData = response.data?.data || []
     laporanList.value = rawData
 
     // Hitung statistik singkat
@@ -256,9 +255,9 @@ const fetchLaporanAdmin = async () => {
 
 const calculateStats = (data) => {
   stats.total = data.length
-  stats.pending = data.filter(i => i.status === 'pending').length
-  stats.proses = data.filter(i => i.status === 'proses').length
-  stats.selesai = data.filter(i => i.status === 'selesai').length
+  stats.pending = data.filter(i => i.status === 'reported').length
+  stats.proses = data.filter(i => i.status === 'processing').length
+  stats.selesai = data.filter(i => i.status === 'completed').length
 }
 
 // ─── Actions: Update Status & Notes ────────────────────────
@@ -267,7 +266,7 @@ const updateStatusLaporan = async (item, newStatus) => {
 
   updatingId.value = item.id
   try {
-    await api.patch(`/admin/laporan-kerusakan/${item.id}/status`, {
+    await api.patch(`/reports/${item.id}`, {
       status: newStatus
     })
 
@@ -282,7 +281,8 @@ const updateStatusLaporan = async (item, newStatus) => {
 
 const bukaModalCatatan = (item) => {
   activeReportForNote.value = item
-  tempNote.value = item.catatan_teknisi || ''
+  const lastUpdate = item.updates?.[item.updates.length - 1]
+  tempNote.value = lastUpdate?.note || ''
 }
 
 const simpanCatatanTeknisi = async () => {
@@ -292,12 +292,13 @@ const simpanCatatanTeknisi = async () => {
   const reportId = activeReportForNote.value.id
 
   try {
-    await api.patch(`/admin/laporan-kerusakan/${reportId}/catatan`, {
-      catatan_teknisi: tempNote.value
+    await api.patch(`/reports/${reportId}`, {
+      status: activeReportForNote.value.status,
+      note: tempNote.value
     })
 
     // Update lokal
-    activeReportForNote.value.catatan_teknisi = tempNote.value
+    await fetchLaporanAdmin()
     activeReportForNote.value = null
   } catch (err) {
     alert('Gagal menyimpan catatan: ' + (err.response?.data?.message || 'Error server'))
@@ -328,7 +329,13 @@ const handleLogout = () => {
 }
 
 const formatStatus = (status) => {
-  const map = { pending: '⏳ Menunggu', proses: '🔨 Diproses', selesai: '✅ Selesai' }
+  const map = {
+    reported: '⏳ Dilaporkan',
+    verified: '🔍 Diverifikasi',
+    processing: '🔨 Diproses',
+    completed: '✅ Selesai',
+    rejected: '❌ Ditolak'
+  }
   return map[status] || status
 }
 
@@ -453,9 +460,11 @@ onMounted(() => {
 .img-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 
 .status-pill { position: absolute; bottom: 6px; left: 6px; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; color: white; }
-.status-pending { background: #dd6b20; }
-.status-proses { background: #3182ce; }
-.status-selesai { background: #38a169; }
+.status-reported { background: #dd6b20; }
+.status-verified { background: #805ad5; }
+.status-processing { background: #3182ce; }
+.status-completed { background: #38a169; }
+.status-rejected { background: #e53e3e; }
 
 .content-wrapper { flex: 1; }
 .item-name { font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 6px; }
