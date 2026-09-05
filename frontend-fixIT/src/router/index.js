@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/public/HomeView.vue' 
 import LoginView from '../views/Auth/LoginView.vue'
 import RegisterView from '../views/Auth/RegisterView.vue'
+import KelolaKategoriView from '../views/admin/kategori/KelolaKategoriView.vue'
+import TambahKategoriView from '../views/admin/kategori/TambahKategoriView.vue'
 
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -22,6 +24,17 @@ const routes = [
     path: '/register', 
     name: 'register',
     component: RegisterView 
+  },
+
+  { 
+    path: '/kategori', 
+    name: 'kategori',
+    component: KelolaKategoriView 
+  },
+  { 
+    path: '/TambahKategori', 
+    name: 'TambahKategori',
+    component: TambahKategoriView 
   },
 
   { 

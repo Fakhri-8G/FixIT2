@@ -8,8 +8,7 @@
         <p class="subtitle">Verifikasi laporan, perbarui status pengerjaan, dan berikan catatan teknis.</p>
       </div>
       <div class="user-meta">
-        <span class="user-badge">👤 {{ adminUser.name || 'Petugas Sarpras' }}</span>
-        <button class="btn-logout" @click="handleLogout">Keluar 🚪</button>
+        <span class="user-badge">👤 {{ adminUser.name || 'Admin' }}</span>
       </div>
     </header>
 

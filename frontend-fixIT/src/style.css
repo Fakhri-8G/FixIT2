@@ -1,46 +1,56 @@
 /* ============================================================
-   style.css — CSS Global untuk seluruh aplikasi
+   style.css — CSS Global (DARK MODE FIX)
    ============================================================ */
 
 /* Import font Inter dari Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ─── Variabel Warna (CSS Custom Properties) ─────────────── */
-/* Variabel ini bisa dipakai di file mana saja dengan var(--nama) */
 :root {
-  --color-primary:   #e94560;   /* Merah utama */
-  --color-dark:      #1a1a2e;   /* Biru gelap */
-  --color-dark2:     #16213e;
-  --color-dark3:     #0f3460;
-  --color-white:     #ffffff;
-  --color-gray:      #f4f4f8;   /* Background halaman */
-  --color-text:      #333333;
+  --color-primary:   #e94560;   /* Merah accent / highlight */
+  --color-primary-hover: #ff2e51;
+  --color-dark:      #0f172a;   /* Deep Slate Dark (Background Utama Body) */
+  --color-dark2:     #1e293b;   /* Card & Container Background */
+  --color-dark3:     #334155;   /* Border & Surface Elemen */
+  --color-white:     #ffffff;   /* Teks Utama / Judul */
+  --color-text:      #f8fafc;   /* Teks Body (Terang/Putih Bersih) */
+  --color-muted:     #94a3b8;   /* Teks Sekunder / Subtitle */
   --radius:          10px;
-  --shadow:          0 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow:          0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
 }
 
-/* ─── Reset Dasar ─────────────────────────────────────────── */
+/* ─── Reset Dasar & Fix Body Background ───────────────────── */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--color-gray);
-  color: var(--color-text);
+/* BODY GAK BOLEH PUTIH! PAKE BACKGROUND DARK & TEKS TERANG */
+html, body {
+  width: 100%;
   min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-dark) !important; /* Ditegaskan biar gak ke-override */
+  color: var(--color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Stylings Khusus Headings / Teks Judul biar Auto-Pop Up */
+
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
-a:hover { text-decoration: underline; }
+a:hover { 
+  color: var(--color-primary-hover);
+  text-decoration: underline; 
+}
 
 /* ─── Utility Classes ─────────────────────────────────────── */
-/* Kelas-kelas ini bisa langsung dipakai di semua komponen */
 
 .container {
   max-width: 1200px;
@@ -48,28 +58,56 @@ a:hover { text-decoration: underline; }
   padding: 24px;
 }
 
+/* Stylings Card/Box biar elemen di dalam body punya kedalaman */
+.card {
+  background-color: var(--color-dark2);
+  border: 1px solid var(--color-dark3);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 20px;
   border-radius: var(--radius);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   border: none;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: all 0.2s ease;
 }
-.btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn:hover { 
+  opacity: 0.9; 
+  transform: translateY(-2px); 
+}
+.btn:active {
+  transform: translateY(0);
+}
 
 /* Variasi warna tombol */
-.btn-primary { background: var(--color-primary); color: white; }
-.btn-success { background: #27ae60; color: white; }
-.btn-danger  { background: #e74c3c; color: white; }
-.btn-info    { background: #2980b9; color: white; }
+.btn-primary { background: var(--color-primary); color: var(--color-white); }
+.btn-success { background: #10b981; color: var(--color-white); }
+.btn-danger  { background: #ef4444; color: var(--color-white); }
+.btn-info    { background: #3b82f6; color: var(--color-white); }
 
-/* Kotak notifikasi */
-.alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 14px; }
-.alert-success { background: #d4edda; color: #155724; border-left: 4px solid #27ae60; }
-.alert-error   { background: #f8d7da; color: #721c24; border-left: 4px solid #e74c3c; }
+/* Kotak notifikasi yang disesuaikan sama tema dark */
+.alert { 
+  padding: 12px 16px; 
+  border-radius: var(--radius); 
+  margin-bottom: 16px; 
+  font-size: 14px; 
+  font-weight: 500;
+}
+.alert-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.alert-error   { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
 
 /* Status loading */
-.loading-text { text-align: center; padding: 40px; color: #888; font-size: 18px; }
+.loading-text { 
+  text-align: center; 
+  padding: 40px; 
+  color: var(--color-muted); 
+  font-size: 18px; 
+}
