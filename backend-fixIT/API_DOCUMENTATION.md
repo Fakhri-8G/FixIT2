@@ -180,6 +180,18 @@ GET /reports
 - **Role `user`** → hanya menampilkan laporan miliknya sendiri, field `user` tidak disertakan
 - **Role `admin`** → menampilkan **semua** laporan, field `user` disertakan
 
+**Query Parameter (opsional):**
+
+| Param | Keterangan |
+|---|---|
+| `keyword` | Cari di `title`, `description`, nama lokasi, dan nama pelapor (partial match, case-insensitive) |
+| `status` | Filter berdasarkan status, harus salah satu dari 5 value valid (`reported`, `verified`, `processing`, `completed`, `rejected`) |
+
+**Contoh:**
+```
+GET /reports?keyword=proyektor&status=reported
+```
+
 **Response 200:**
 ```json
 {
@@ -198,7 +210,7 @@ GET /reports
   ]
 }
 ```
-> ⚠️ **Belum ada fitur search/filter/pagination di backend.** Kalau butuh cari berdasarkan keyword atau status, saat ini harus difilter manual di frontend dari hasil `GET /reports` ini.
+> Tidak ada pagination — semua hasil yang cocok filter dikembalikan sekaligus dalam 1 array.
 
 ---
 
@@ -314,7 +326,7 @@ Jalankan `php artisan migrate:fresh --seed` untuk mendapatkan data ini beserta c
 
 ## ⚠️ Catatan Penting untuk Frontend
 
-1. **Tidak ada field `tingkat_urgensi`** di backend. Kalau dibutuhkan, ini fitur baru yang perlu didiskusikan & ditambah migration dulu — jangan diasumsikan ada di response.
+1. **Tidak ada field `tingkat_urgensi` / prioritas laporan** di backend. Kalau dibutuhkan, ini fitur baru yang perlu didiskusikan & ditambah migration dulu — jangan diasumsikan ada di response.
 2. **Foto selalu array** (`images[]`), sebuah laporan bisa punya lebih dari 1 foto. Jangan asumsikan hanya 1 foto.
 3. **Catatan (`note`) adalah bagian dari riwayat status**, bukan field tunggal yang bisa diedit bebas. Ambil dari `updates[]`, dan kirim bersamaan dengan update status.
 4. Field relasi (`category`, `location`, `user`) berupa **object**, bukan string langsung — akses nama lewat `category.name`, `location.name`, `user.name`.
