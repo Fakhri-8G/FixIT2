@@ -235,7 +235,12 @@ const fetchLaporanAdmin = async () => {
 
   try {
     // Dipanggil menggunakan endpoint admin (dengan Authorization Header terpasang)
-    const response = await api.get('/reports')
+    const response = await api.get('/reports', {
+      params: {
+        keyword: searchQuery.value.trim() || undefined,
+        status: statusSelected.value !== 'semua' ? statusSelected.value : undefined
+      }
+    })
 
     const rawData = response.data?.data || []
     laporanList.value = rawData
