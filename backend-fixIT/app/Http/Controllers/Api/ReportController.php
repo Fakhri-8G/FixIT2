@@ -29,6 +29,31 @@ class ReportController extends Controller
                 $query->where('user_id', $user->id);
             }
 
+            // 🔍 Filter berdasarkan keyword (cari di title, description, dan nama lokasi)
+            if ($request->filled('keyword')) {
+                $keyword = $request->keyword;
+
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('title', 'like', "%{$keyword}%")
+                    ->orWhere('description', 'like', "%{$keyword}%")
+                    ->orWhereHas('location', function ($locQuery) use ($keyword) {
+                        $locQuery->where('name', 'like', "%{$keyword}%");
+                    })
+                    ->orWhereHas('user', function ($userQuery) use ($keyword) {
+                        $userQuery->where('name', 'like', "%{$keyword}%");
+                    });
+                });
+            }
+
+            // 🏷️ Filter berdasarkan status
+            if ($request->filled('status')) {
+                $request->validate([
+                    'status' => 'in:reported,verified,processing,completed,rejected',
+                ]);
+
+                $query->where('status', $request->status);
+            }
+
             $reports = $query->latest()->get();
 
             return $this->success($reports, 'Daftar laporan berhasil diambil.');
