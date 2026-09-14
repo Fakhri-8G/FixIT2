@@ -5,6 +5,7 @@ import LoginView from '../views/Auth/LoginView.vue'
 import RegisterView from '../views/Auth/RegisterView.vue'
 import KelolaKategoriView from '../views/admin/kategori/KelolaKategoriView.vue'
 import TambahKategoriView from '../views/admin/kategori/TambahKategoriView.vue'
+import EditKategoriView from '../views/admin/kategori/EditKategoriView.vue'
 
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -26,26 +27,38 @@ const routes = [
     component: RegisterView 
   },
 
+  // Halaman Admin & Kategori (Khusus Admin/Petugas)
   { 
     path: '/kategori', 
     name: 'kategori',
-    component: KelolaKategoriView 
+    component: KelolaKategoriView,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
   },
   { 
     path: '/TambahKategori', 
     name: 'TambahKategori',
-    component: TambahKategoriView 
+    component: TambahKategoriView,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
   },
-
+  { 
+    path: '/edit-kategori/:id', 
+    name: 'edit-kategori',
+    component: EditKategoriView,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
+  },
   { 
     path: '/admin/dashboard-kerusakan', 
     name: 'admin-dashboard',
-    component: DashboardAdmin 
+    component: DashboardAdmin, 
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
   },
+
+  // Halaman User Biasa
   { 
     path: '/dashboard', 
     name: 'user-dashboard',
-    component: DashboardUser 
+    component: DashboardUser,
+    meta: { requiresAuth: true }
   },
 
   {
@@ -59,29 +72,48 @@ const router = createRouter({
   routes,
 })
 
-// ─── Navigation Guard (FIX SYNTAX RETURN) ─────────────────
-// Hapus parameter 'next', kita cuma pakai (to, from)
-router.beforeEach((to, from) => {
+// ─── NAVIGATION GUARD SECURE ─────────────────
+router.beforeEach((to) => {
   const token = localStorage.getItem('token')
 
-  // Kalau user mau ke halaman login/register tapi kondisi udah punya token
-  if ((to.name === 'login' || to.name === 'register') && token) {
+  // Helper parsing user biar gak berulang-ulang try-catch
+  let user = null
+  let role = ''
+  if (token) {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      const role = user?.role ? String(user.role).toLowerCase() : ''
-
-      if (role === 'admin' || role === 'petugas') {
-        return '/admin/dashboard-kerusakan' // Pengganti next('/admin/dashboard-kerusakan')
-      }
-      return '/dashboard' // Pengganti next('/dashboard')
+      user = JSON.parse(localStorage.getItem('user') || '{}')
+      role = user?.role ? String(user.role).toLowerCase() : ''
     } catch (e) {
+      // Data corrupt? Bersihin & minta re-login!
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      return true // Izinkan lanjut ke halaman tujuan jika data corrupt
+      return '/login'
     }
   }
 
-  // Tanpa return apa-apa atau return true berarti mengizinkan navigasi biasa
+  // 1. Kalau BELUM LOGIN tapi mau akses halaman berproteksi (requiresAuth)
+  if (to.meta.requiresAuth && !token) {
+    return '/login'
+  }
+
+  // 2. Kalau KEDAPATAN MAU AKSES HALAMAN ADMIN tapi BUKAN ADMIN/PETUGAS
+  if (to.meta.requiresAdmin) {
+    const isAdminOrPetugas = role === 'admin' || role === 'petugas'
+    if (!isAdminOrPetugas) {
+      // User biasa nekat masuk ke /admin? Lempar ke dashboard user!
+      return '/dashboard' 
+    }
+  }
+
+  // 3. Kalau UDAH LOGIN tapi iseng buka halaman /login atau /register
+  if ((to.name === 'login' || to.name === 'register') && token) {
+    if (role === 'admin' || role === 'petugas') {
+      return '/admin/dashboard-kerusakan'
+    }
+    return '/dashboard'
+  }
+
+  // Lolos semua proteksi
   return true
 })
 
