@@ -12,7 +12,6 @@
 
         <div class="guest-menu">
           <RouterLink to="/" class="guest-link">Beranda</RouterLink>
-          <RouterLink to="/cara-kerja" class="guest-link">Cara Kerja</RouterLink>
           <RouterLink to="/tentang" class="guest-link">Tentang</RouterLink>
           <RouterLink to="/kontak" class="guest-link">Kontak</RouterLink>
         </div>

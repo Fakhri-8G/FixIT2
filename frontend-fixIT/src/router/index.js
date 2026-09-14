@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+
 //Auth
 import HomeView from '../views/public/HomeView.vue' 
 import LoginView from '../views/Auth/LoginView.vue'
@@ -22,6 +23,9 @@ import KelolaPengguna from '../views/admin/pengguna/KelolaPengguna.vue'
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
 
+
+import Tentang from '../views/user/Tentang.vue'
+
 const routes = [
   { 
     path: '/', 
@@ -37,6 +41,12 @@ const routes = [
     path: '/register', 
     name: 'register',
     component: RegisterView 
+  },
+
+  {
+    path: '/tentang',
+    name: 'tentang',
+    component: Tentang
   },
 
   // Halaman Admin & Kategori (Khusus Admin/Petugas)
