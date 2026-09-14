@@ -12,7 +12,6 @@
 
         <div class="guest-menu">
           <RouterLink to="/" class="guest-link">Beranda</RouterLink>
-          <RouterLink to="/cara-kerja" class="guest-link">Cara Kerja</RouterLink>
           <RouterLink to="/tentang" class="guest-link">Tentang</RouterLink>
           <RouterLink to="/kontak" class="guest-link">Kontak</RouterLink>
         </div>
@@ -89,10 +88,7 @@
               <span class="nav-icon">📊</span>
               <span class="nav-label">Dashboard</span>
             </RouterLink>
-            <RouterLink to="/semua-laporan" class="nav-item" @click="closeMobile">
-              <span class="nav-icon">📑</span>
-              <span class="nav-label">Semua Laporan</span>
-            </RouterLink>
+          
             <RouterLink to="/kategori" class="nav-item" @click="closeMobile">
               <span class="nav-icon">🗂️</span>
               <span class="nav-label">Kategori</span>
@@ -103,7 +99,7 @@
             </RouterLink>
             <RouterLink to="/pengguna" class="nav-item" @click="closeMobile">
               <span class="nav-icon">👥</span>
-              <span class="nav-label">Kelola Pengguna</span>
+              <span class="nav-label">Daftar Pengguna</span>
             </RouterLink>
           </template>
         </div>
