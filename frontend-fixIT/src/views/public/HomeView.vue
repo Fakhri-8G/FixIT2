@@ -99,10 +99,6 @@
               <span class="nav-icon">📊</span>
               <span class="nav-label">Dashboard</span>
             </RouterLink>
-            <RouterLink to="/semua-laporan" class="nav-item" @click="closeMobile">
-              <span class="nav-icon">📑</span>
-              <span class="nav-label">Semua Laporan</span>
-            </RouterLink>
             <RouterLink to="/kategori" class="nav-item" @click="closeMobile">
               <span class="nav-icon">🗂️</span>
               <span class="nav-label">Kategori</span>
