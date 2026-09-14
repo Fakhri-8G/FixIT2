@@ -1,19 +1,20 @@
 <template>
   <div class="card-container">
     <div class="card-header">
-      <h3>Tambah Kategori</h3>
-      <p class="subtitle">Buat kategori baru untuk mengelompokkan data.</p>
+      <h3>Tambah Lokasi</h3>
+      <p class="subtitle">Buat lokasi baru untuk pengelompokan titik kerusakan/aset.</p>
     </div>
     
     <form @submit.prevent="handleSubmit" class="form-body">
+      <!-- Input Nama Lokasi -->
       <div class="form-group">
-        <label for="name">Nama Kategori</label>
+        <label for="name">Nama Lokasi</label>
         <div class="input-wrapper">
           <input 
             id="name"
             v-model="form.name" 
             type="text" 
-            placeholder="Contoh: Elektronik, Pakaian..."
+            placeholder="Contoh: Kelas XII RPL 1, Lab Komputer 2..."
             :class="{ 'is-invalid': errors.name }"
           />
         </div>
@@ -24,14 +25,33 @@
         </transition>
       </div>
 
-      <!-- Button Group: Tombol Batal + Simpan -->
+      <!-- Input Deskripsi Lokasi -->
+      <div class="form-group">
+        <label for="description">Deskripsi <span class="text-optional">(Opsional)</span></label>
+        <div class="input-wrapper">
+          <textarea 
+            id="description"
+            v-model="form.description" 
+            rows="3"
+            placeholder="Contoh: Ruang kelas jurusan RPL di lantai 2..."
+            :class="{ 'is-invalid': errors.description }"
+          ></textarea>
+        </div>
+        <transition name="fade">
+          <span v-if="errors.description" class="error-text">
+            {{ errors.description[0] }}
+          </span>
+        </transition>
+      </div>
+
+      <!-- Submit & Action Buttons -->
       <div class="button-group">
-        <RouterLink to="/kategori" class="btn-cancel">
+        <RouterLink to="/locations" class="btn-cancel">
           Batal
         </RouterLink>
         <button type="submit" class="btn-submit" :disabled="loading">
           <span v-if="loading" class="spinner"></span>
-          <span>{{ loading ? 'Menyimpan...' : 'Simpan Kategori' }}</span>
+          <span>{{ loading ? 'Menyimpan...' : 'Simpan Lokasi' }}</span>
         </button>
       </div>
 
@@ -51,12 +71,16 @@
 
 <script setup>
 import { ref, reactive } from 'vue';
-import { useRouter, RouterLink } from 'vue-router'; // 1. Tambah useRouter di sini
-import api from '../../../utils/api';
+import { useRouter, RouterLink } from 'vue-router';
+import api from '../../../utils/api'; // Menggunakan axios instance kamu
 
-const router = useRouter(); // 2. Inisialisasi router
+const router = useRouter();
 
-const form = reactive({ name: '' });
+const form = reactive({ 
+  name: '',
+  description: '' 
+});
+
 const errors = ref({});
 const loading = ref(false);
 const successMessage = ref('');
@@ -71,20 +95,23 @@ const handleSubmit = async () => {
   const token = localStorage.getItem('token'); 
 
   if (!token) {
-    errorMessage.value = 'belum login / token gak ada!';
+    errorMessage.value = 'Belum login atau token tidak ditemukan!';
     loading.value = false;
     return;
   }
 
   try {
-    const response = await api.post('/categories', form);
+    const response = await api.post('/locations', form);
 
+    // Reset Form
     form.name = '';
-    successMessage.value = response.data.message || 'Kategori berhasil ditambahkan.';
-
-    // 3. Tambahkan Auto-Redirect ke halaman /categories setelah 1.5 detik
+    form.description = '';
+    
+    successMessage.value = response.data.message || 'Lokasi berhasil ditambahkan.';
+    
+    // Redirect otomatis ke list lokasi setelah 1.5 detik (opsional)
     setTimeout(() => {
-      router.push('/kategori'); // Sesuaikan dengan path route halaman list kategori kamu
+      router.push('/lokasi');
     }, 1500);
 
   } catch (error) {
@@ -92,7 +119,7 @@ const handleSubmit = async () => {
       if (error.response.status === 422) {
         errors.value = error.response.data.errors || {};
       } else if (error.response.status === 401 || error.response.status === 403) {
-        errorMessage.value = 'Akses ditolak! Akun bukan Admin atau session udah abis.';
+        errorMessage.value = 'Akses ditolak! Akun bukan Admin atau session sudah habis.';
       } else {
         errorMessage.value = error.response.data.message || 'Terjadi kesalahan pada server.';
       }
@@ -110,7 +137,7 @@ const handleSubmit = async () => {
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 440px;
+  max-width: 480px;
   background: #ffffff;
   border-radius: 16px;
   padding: 28px;
@@ -152,7 +179,14 @@ const handleSubmit = async () => {
   color: #334155;
 }
 
-.input-wrapper input {
+.text-optional {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.input-wrapper input,
+.input-wrapper textarea {
   width: 100%;
   padding: 12px 16px;
   font-family: inherit;
@@ -164,24 +198,29 @@ const handleSubmit = async () => {
   outline: none;
   box-sizing: border-box;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  resize: vertical;
 }
 
-.input-wrapper input::placeholder {
+.input-wrapper input::placeholder,
+.input-wrapper textarea::placeholder {
   color: #94a3b8;
 }
 
-.input-wrapper input:focus {
+.input-wrapper input:focus,
+.input-wrapper textarea:focus {
   background-color: #ffffff;
   border-color: #6366f1;
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
-.input-wrapper input.is-invalid {
+.input-wrapper input.is-invalid,
+.input-wrapper textarea.is-invalid {
   border-color: #f43f5e;
   background-color: #fff5f5;
 }
 
-.input-wrapper input.is-invalid:focus {
+.input-wrapper input.is-invalid:focus,
+.input-wrapper textarea.is-invalid:focus {
   box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.1);
 }
 
@@ -194,7 +233,6 @@ const handleSubmit = async () => {
   gap: 4px;
 }
 
-/* Styling Button Group */
 .button-group {
   display: flex;
   gap: 12px;

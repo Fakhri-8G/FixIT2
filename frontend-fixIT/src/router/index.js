@@ -1,12 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+//Auth
 import HomeView from '../views/public/HomeView.vue' 
 import LoginView from '../views/Auth/LoginView.vue'
 import RegisterView from '../views/Auth/RegisterView.vue'
+
+//Kategori
 import KelolaKategoriView from '../views/admin/kategori/KelolaKategoriView.vue'
 import TambahKategoriView from '../views/admin/kategori/TambahKategoriView.vue'
 import EditKategoriView from '../views/admin/kategori/EditKategoriView.vue'
 
+//Lokasi
+import KelolaLokasi from '../views/admin/lokasi/KelolaLokasi.vue'
+import TambahLokasi from '../views/admin/lokasi/TambahLokasi.vue'
+import EditLokasi from '../views/admin/lokasi/EditLokasi.vue'
+
+//Dashboard
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
 
@@ -46,6 +55,27 @@ const routes = [
     component: EditKategoriView,
     meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
   },
+
+  //Lokasi
+  { 
+    path: '/lokasi', 
+    name: 'lokasi',
+    component: KelolaLokasi,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
+  },
+  { 
+    path: '/TambahLokasi', 
+    name: 'TambahLokasi',
+    component: TambahLokasi,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
+  },
+  { 
+    path: '/edit-lokasi/:id', 
+    name: 'edit-lokasi',
+    component: EditLokasi,
+    meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
+  },
+
   { 
     path: '/admin/dashboard-kerusakan', 
     name: 'admin-dashboard',
