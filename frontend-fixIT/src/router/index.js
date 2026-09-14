@@ -15,6 +15,9 @@ import KelolaLokasi from '../views/admin/lokasi/KelolaLokasi.vue'
 import TambahLokasi from '../views/admin/lokasi/TambahLokasi.vue'
 import EditLokasi from '../views/admin/lokasi/EditLokasi.vue'
 
+//pengguna
+import KelolaPengguna from '../views/admin/pengguna/KelolaPengguna.vue'
+
 //Dashboard
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -74,6 +77,14 @@ const routes = [
     name: 'edit-lokasi',
     component: EditLokasi,
     meta: { requiresAuth: true, requiresAdmin: true } // TAMBAH META REGISTRATION ADMIN
+  },
+
+  //pengguna
+  {
+    path: '/pengguna',
+    name: 'pengguna',
+    component: KelolaPengguna,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
 
   { 
