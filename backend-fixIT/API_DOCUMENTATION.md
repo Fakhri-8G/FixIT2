@@ -86,6 +86,44 @@ GET /me
 
 ---
 
+## 👤 Profile
+
+### Lihat Profil
+```
+GET /me
+```
+🔒 Butuh token. Mengembalikan data user yang sedang login.
+
+### Update Profil (Nama & Email)
+```
+PUT /profile
+```
+🔒 Butuh token.
+**Body:**
+```json
+{ "name": "Budi Santoso", "email": "budi@fixit.com" }
+```
+**Response 200:** data user ter-update.
+**Response 422:** kalau email sudah dipakai user lain, atau field kosong.
+
+### Ganti Password
+```
+PUT /profile/password
+```
+🔒 Butuh token.
+**Body:**
+```json
+{
+  "current_password": "password_lama",
+  "password": "password_baru",
+  "password_confirmation": "password_baru"
+}
+```
+**Response 200:** `{ "status": true, "message": "Password berhasil diperbarui.", "data": null }`
+**Response 422:** kalau `current_password` salah, atau password baru tidak memenuhi validasi (`min:8`, harus `confirmed`).
+
+---
+
 ## 🏷️ Category
 
 | Method | Endpoint | Akses |
