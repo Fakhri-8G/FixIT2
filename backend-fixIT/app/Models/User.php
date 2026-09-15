@@ -22,6 +22,11 @@ class User extends Authenticatable
         'role'
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     public function reports()
     {
         return $this->hasMany(Report::class);
