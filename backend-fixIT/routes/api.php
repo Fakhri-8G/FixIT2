@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReportUpdateController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +15,11 @@ Route::post('/login', [AuthController::class, 'login']);
 // PROTECTED ROUTES (butuh login)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/profile', [AuthController::class, 'profile']);
+
+    // Profil routes
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
     // Report bisa diakses user & admin (logic dibedakan di controller)
     Route::apiResource('reports', ReportController::class);
