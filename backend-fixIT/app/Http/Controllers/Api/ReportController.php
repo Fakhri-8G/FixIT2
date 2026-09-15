@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Intervention\Image\Laravel\Facades\Image;
 
 class ReportController extends Controller
 {
@@ -85,11 +86,15 @@ class ReportController extends Controller
 
             // simpan tiap gambar ke storage & tabel report_images
             foreach ($request->file('images') as $image) {
-                $path = $image->store('reports', 'public');
+                $filename = 'reports/' . uniqid() . '.jpg';
 
-                $report->images()->create([
-                    'image_path' => $path,
-                ]);
+                $img = Image::read($image)
+                    ->scaleDown(width: 1200)   // maksimal lebar 1200px, cukup untuk web
+                    ->toJpeg(quality: 75);      // kompres kualitas 75%, cukup bagus tapi jauh lebih kecil ukurannya
+
+                Storage::disk('public')->put($filename, (string) $img);
+
+                $report->images()->create(['image_path' => $filename]);
             }
 
             return $this->success($report->load('images'), 'Laporan berhasil dibuat.', 201);
