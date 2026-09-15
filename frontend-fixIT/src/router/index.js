@@ -28,11 +28,6 @@ import Tentang from '../views/user/Tentang.vue'
 
 const routes = [
   { 
-    path: '/', 
-    name: 'home',
-    component: HomeView 
-  },
-  { 
     path: '/login', 
     name: 'login',
     component: LoginView 
