@@ -79,9 +79,4 @@ class AuthController extends Controller
             return $this->error('Gagal melakukan logout.', 500);
         }
     }
-
-    public function profile(Request $request)
-    {
-        return $this->success($request->user(), 'Data profil berhasil diambil.');
-    }
 }
