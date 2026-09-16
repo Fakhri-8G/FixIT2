@@ -122,6 +122,49 @@ PUT /profile/password
 **Response 200:** `{ "status": true, "message": "Password berhasil diperbarui.", "data": null }`
 **Response 422:** kalau `current_password` salah, atau password baru tidak memenuhi validasi (`min:8`, harus `confirmed`).
 
+### Upload/Ganti Foto Profil
+```
+POST /profile/avatar
+```
+🔒 Butuh token. **Body → `multipart/form-data`:**
+| Key | Tipe | Wajib |
+|---|---|---|
+| avatar | file (jpg/jpeg/png, max 2MB) | ✅ |
+
+**Response 200:** data user, field `avatar_url` berisi URL foto baru siap pakai di `<img>`.
+> Avatar lama otomatis dihapus dari storage saat upload avatar baru.
+
+### Statistik Ringkas Laporan
+```
+GET /profile/stats
+```
+🔒 Butuh token.
+- **Role `user`** → statistik laporan miliknya sendiri
+- **Role `admin`** → statistik seluruh laporan di sistem
+
+**Response 200:**
+```json
+{
+  "status": true,
+  "message": "Statistik berhasil diambil.",
+  "data": {
+    "total": 4,
+    "reported": 1,
+    "verified": 1,
+    "processing": 1,
+    "completed": 1,
+    "rejected": 0
+  }
+}
+```
+
+### Logout dari Semua Device
+```
+POST /logout-all
+```
+🔒 Butuh token. Menghapus **semua** token milik user (bukan hanya token yang sedang dipakai) — berguna kalau device lain masih login dan user ingin mengamankan akunnya.
+**Response 200:** `{ "status": true, "message": "Berhasil logout dari semua perangkat.", "data": null }`
+
 ---
 
 ## 🏷️ Category
@@ -224,31 +267,46 @@ GET /reports
 |---|---|
 | `keyword` | Cari di `title`, `description`, nama lokasi, dan nama pelapor (partial match, case-insensitive) |
 | `status` | Filter berdasarkan status, harus salah satu dari 5 value valid (`reported`, `verified`, `processing`, `completed`, `rejected`) |
+| `page` | Nomor halaman yang ingin diambil (default: 1) |
+| `per_page` | Jumlah item per halaman (default: 10) |
 
 **Contoh:**
 ```
-GET /reports?keyword=proyektor&status=reported
+GET /reports?keyword=proyektor&status=reported&page=1&per_page=10
 ```
 
-**Response 200:**
+**Response 200 (⚠️ Menggunakan Pagination — Struktur Berbeda dari Endpoint Lain):**
 ```json
 {
   "status": true,
   "message": "Daftar laporan berhasil diambil.",
-  "data": [
-    {
-      "id": 1,
-      "title": "Proyektor Tidak Menyala",
-      "description": "...",
-      "status": "reported",
-      "category": { "id": 1, "name": "Elektronik" },
-      "location": { "id": 1, "name": "Kelas XII RPL 1" },
-      "images": [ { "id": 1, "image_url": "..." } ]
-    }
-  ]
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 1,
+        "title": "Proyektor Tidak Menyala",
+        "description": "...",
+        "status": "reported",
+        "category": { "id": 1, "name": "Elektronik" },
+        "location": { "id": 1, "name": "Kelas XII RPL 1" },
+        "images": [ { "id": 1, "image_url": "..." } ]
+      }
+    ],
+    "first_page_url": "http://127.0.0.1:8000/api/reports?page=1",
+    "from": 1,
+    "last_page": 3,
+    "last_page_url": "http://127.0.0.1:8000/api/reports?page=3",
+    "next_page_url": "http://127.0.0.1:8000/api/reports?page=2",
+    "prev_page_url": null,
+    "path": "http://127.0.0.1:8000/api/reports",
+    "per_page": 10,
+    "to": 10,
+    "total": 25
+  }
 }
 ```
-> Tidak ada pagination — semua hasil yang cocok filter dikembalikan sekaligus dalam 1 array.
+> ⚠️ **PENTING:** Array laporan ada di `data.data`, **bukan** `data` langsung — beda dengan endpoint lain di dokumentasi ini yang tidak dipaginasi. Gunakan `data.current_page`, `data.last_page`, `data.total` untuk membangun kontrol navigasi halaman (tombol next/prev, indikator "Halaman X dari Y").
 
 ---
 
@@ -327,6 +385,84 @@ DELETE /report-images/{image_id}
 
 ---
 
+---
+
+## 👥 Users (Admin Only)
+
+### List Semua Pengguna
+```
+GET /users
+```
+🔒 **Admin only**.
+
+**Query parameter (opsional):**
+| Param | Keterangan |
+|---|---|
+| `keyword` | Cari di `name` dan `email` (partial match) |
+| `role` | Filter berdasarkan role, harus `admin` atau `user` |
+
+**Contoh:**
+```
+GET /users?keyword=budi&role=user
+```
+
+**Response 200:**
+```json
+{
+  "status": true,
+  "message": "Daftar pengguna berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "name": "Admin FixIT",
+      "email": "admin@fixit.com",
+      "role": "admin",
+      "reports_count": 0
+    },
+    {
+      "id": 3,
+      "name": "Budi Santoso",
+      "email": "budi@fixit.com",
+      "role": "user",
+      "reports_count": 4
+    }
+  ]
+}
+```
+> Tidak dipaginasi — mengembalikan seluruh user yang cocok filter sekaligus. Field `reports_count` dihitung otomatis, termasuk user yang belum pernah membuat laporan (`reports_count: 0`).
+
+### Detail 1 Pengguna Beserta Laporannya
+```
+GET /users/{id}
+```
+🔒 **Admin only**.
+
+**Response 200:**
+```json
+{
+  "status": true,
+  "message": "Detail pengguna berhasil diambil.",
+  "data": {
+    "id": 3,
+    "name": "Budi Santoso",
+    "email": "budi@fixit.com",
+    "role": "user",
+    "reports_count": 4,
+    "reports": [
+      {
+        "id": 1,
+        "title": "Proyektor Tidak Menyala",
+        "status": "reported",
+        "category": { "id": 1, "name": "Elektronik" },
+        "location": { "id": 1, "name": "Kelas XII RPL 1" },
+        "images": [ { "id": 1, "image_url": "..." } ]
+      }
+    ]
+  }
+}
+```
+> Field `reports` berisi SEMUA laporan milik user ini (tidak dipaginasi), diurutkan dari yang terbaru.
+
 ## 🔑 Ringkasan Role & Akses
 
 | Aksi | User | Admin |
@@ -367,5 +503,6 @@ Jalankan `php artisan migrate:fresh --seed` untuk mendapatkan data ini beserta c
 1. **Tidak ada field `tingkat_urgensi` / prioritas laporan** di backend. Kalau dibutuhkan, ini fitur baru yang perlu didiskusikan & ditambah migration dulu — jangan diasumsikan ada di response.
 2. **Foto selalu array** (`images[]`), sebuah laporan bisa punya lebih dari 1 foto. Jangan asumsikan hanya 1 foto.
 3. **Catatan (`note`) adalah bagian dari riwayat status**, bukan field tunggal yang bisa diedit bebas. Ambil dari `updates[]`, dan kirim bersamaan dengan update status.
+4. **Endpoint `GET /reports` menggunakan pagination** — array laporan ada di `data.data`, bukan `data` langsung. Endpoint lain (categories, locations, dst) TIDAK dipaginasi dan tetap mengembalikan array langsung di `data`.
 4. Field relasi (`category`, `location`, `user`) berupa **object**, bukan string langsung — akses nama lewat `category.name`, `location.name`, `user.name`.
 5. Response **tidak dibungkus pagination** — `data` langsung berupa array, tidak perlu akses `data.data.data`.
