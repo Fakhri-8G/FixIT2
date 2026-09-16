@@ -176,7 +176,7 @@ const filters = ref({
 
 const token = localStorage.getItem('token') || '';
 const api = axios.create({
-  baseURL: 'http://10.10.10.133:8000/api',
+  baseURL: 'http://10.10.11.20:8000/api',
   headers: {
     'Authorization': `Bearer ${token}`,
     'Accept': 'application/json'

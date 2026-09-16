@@ -102,7 +102,7 @@ const successMessage = ref('');
 const errorMessage = ref('');
 
 // --- Constants -------------------------------------------------------------
-const API_ENDPOINT = 'http://127.0.0.1:8000/api/locations';
+const API_ENDPOINT = 'http://10.10.11.20:8000/api/locations';
 const MESSAGE_AUTO_HIDE_MS = 4000;
 
 // --- Computed --------------------------------------------------------------
@@ -183,7 +183,7 @@ defineExpose({ fetchLocations });
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 900px;
+  max-width: 1800px;
   background: #ffffff;
   border-radius: 16px;
   padding: 28px;

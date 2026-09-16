@@ -31,6 +31,11 @@ import DashboardUser from '../views/user/DashboardUserView.vue'
 import Tentang from '../views/user/Tentang.vue'
 
 const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView
+  },
   { 
     path: '/login', 
     name: 'login',

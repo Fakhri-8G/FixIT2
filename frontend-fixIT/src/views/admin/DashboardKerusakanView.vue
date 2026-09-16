@@ -7,9 +7,6 @@
         <h1 class="title">Panel Kelola Perbaikan Fasilitas</h1>
         <p class="subtitle">Verifikasi laporan, perbarui status pengerjaan, dan berikan catatan teknis.</p>
       </div>
-      <div class="user-meta">
-        <span class="user-badge">👤 {{ adminUser.name || 'Admin' }}</span>
-      </div>
     </header>
 
     <!-- Stat Cards Summary -->
@@ -87,15 +84,12 @@
         :key="item.id" 
         class="report-card"
       >
-        <!-- Header Card: Lokasi, Urgensi & ID Laporan -->
+        <!-- Header Card: Lokasi & ID Laporan -->
         <div class="card-header">
           <div class="header-left">
             <span class="report-id">#FIX-{{ item.id }}</span>
             <span class="location-tag">📍 {{ item.location?.name }}</span>
           </div>
-          <span :class="['badge-priority', `priority-${item.tingkat_urgensi}`]">
-            {{ formatUrgensi(item.tingkat_urgensi) }}
-          </span>
         </div>
 
         <!-- Body: Foto & Detail Deskripsi -->
@@ -156,6 +150,19 @@
           </div>
         </div>
       </article>
+
+      <!-- 🆕 Kontrol Navigasi Halaman -->
+      <div v-if="lastPage > 1" class="pagination-controls">
+        <button class="btn-page" @click="prevPage" :disabled="currentPage === 1">
+          ← Sebelumnya
+        </button>
+        <span class="page-info">
+          Halaman {{ currentPage }} dari {{ lastPage }} ({{ totalReports }} laporan)
+        </span>
+        <button class="btn-page" @click="nextPage" :disabled="currentPage === lastPage">
+          Selanjutnya →
+        </button>
+      </div>
     </main>
 
     <!-- Empty State -->
@@ -212,6 +219,11 @@ const tempNote             = ref('')
 const isSavingNote         = ref(false)
 const adminUser            = ref({})
 
+// 🆕 State pagination
+const currentPage           = ref(1)
+const lastPage              = ref(1)
+const totalReports          = ref(0)
+
 const stats = reactive({
   total: 0,
   pending: 0,
@@ -234,18 +246,24 @@ const fetchLaporanAdmin = async () => {
   errorMessage.value = null
 
   try {
-    // Dipanggil menggunakan endpoint admin (dengan Authorization Header terpasang)
     const response = await api.get('/reports', {
       params: {
         keyword: searchQuery.value.trim() || undefined,
-        status: statusSelected.value !== 'semua' ? statusSelected.value : undefined
+        status: statusSelected.value !== 'semua' ? statusSelected.value : undefined,
+        page: currentPage.value,   // 🆕
+        per_page: 10                 // 🆕
       }
     })
 
-    const rawData = response.data?.data || []
-    laporanList.value = rawData
+    // 🆕 Struktur berubah karena pagination: array laporan ada di data.data
+    const paginationData = response.data?.data
+    const rawData = paginationData?.data || []
 
-    // Hitung statistik singkat
+    laporanList.value = rawData
+    currentPage.value = paginationData?.current_page || 1
+    lastPage.value = paginationData?.last_page || 1
+    totalReports.value = paginationData?.total || 0
+
     calculateStats(rawData)
   } catch (err) {
     if (err.response?.status === 401 || err.response?.status === 403) {
@@ -259,11 +277,22 @@ const fetchLaporanAdmin = async () => {
 }
 
 const calculateStats = (data) => {
-  stats.total = data.length
+  // 🆕 total pakai totalReports (dari backend), bukan data.length (cuma 1 halaman)
+  stats.total = totalReports.value
   stats.pending = data.filter(i => i.status === 'reported').length
   stats.proses = data.filter(i => i.status === 'processing').length
   stats.selesai = data.filter(i => i.status === 'completed').length
 }
+
+// ─── 🆕 Navigasi Halaman ────────────────────────────────────
+const goToPage = (page) => {
+  if (page < 1 || page > lastPage.value) return
+  currentPage.value = page
+  fetchLaporanAdmin()
+}
+
+const nextPage = () => goToPage(currentPage.value + 1)
+const prevPage = () => goToPage(currentPage.value - 1)
 
 // ─── Actions: Update Status & Notes ────────────────────────
 const updateStatusLaporan = async (item, newStatus) => {
@@ -302,7 +331,6 @@ const simpanCatatanTeknisi = async () => {
       note: tempNote.value
     })
 
-    // Update lokal
     await fetchLaporanAdmin()
     activeReportForNote.value = null
   } catch (err) {
@@ -317,6 +345,7 @@ let debounceTimer = null
 const handleSearch = () => {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
+    currentPage.value = 1   // 🆕 reset ke halaman 1 tiap kali search berubah
     fetchLaporanAdmin()
   }, 400)
 }
@@ -324,6 +353,7 @@ const handleSearch = () => {
 const gantiStatusFilter = (status) => {
   if (statusSelected.value === status) return
   statusSelected.value = status
+  currentPage.value = 1   // 🆕 reset ke halaman 1 tiap kali filter berubah
   fetchLaporanAdmin()
 }
 
@@ -342,11 +372,6 @@ const formatStatus = (status) => {
     rejected: '❌ Ditolak'
   }
   return map[status] || status
-}
-
-const formatUrgensi = (urgensi) => {
-  const map = { rendah: 'Biasa', sedang: 'Sedang', darurat: '🚨 DARURAT' }
-  return map[urgensi] || urgensi
 }
 
 const formatTanggal = (dateString) => {
@@ -386,13 +411,14 @@ onMounted(() => {
 }
 
 .dashboard-wrapper {
-  max-width: 1140px;
+  max-width: 2000px;
   margin: 0 auto;
   padding: 32px 20px;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-main);
   background-color: #f8fafc;
   min-height: 100vh;
+  border-radius: 20px;
 }
 
 /* ─── Header Section ──────────────────────────────────────── */
@@ -964,6 +990,33 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px;
+}
+.btn-page {
+  background: #2b6cb0;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-page:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+.page-info {
+  font-size: 13px;
+  color: #718096;
+  font-weight: 600;
 }
 
 .btn-save:hover { background: #1d4ed8; }

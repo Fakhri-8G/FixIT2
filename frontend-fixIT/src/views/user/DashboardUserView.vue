@@ -6,9 +6,7 @@
         <h1 class="title">🛠️ Layanan Pengaduan Fasilitas</h1>
         <p class="subtitle">Pantau statistik, status, dan rekam jejak kerusakan secara realtime.</p>
       </div>
-      <RouterLink to="/tambah-laporan" class="btn btn-create" >
-        ➕ Buat Laporan Baru
-      </RouterLink>
+      
     </header>
 
     <!-- 📊 SECTION CHARTS & GRAPHS 📊 -->

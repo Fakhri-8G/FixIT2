@@ -101,7 +101,7 @@ const submitting = ref(false);
 // Tembak API pake Header Token
 const token = localStorage.getItem('token') || '';
 const api = axios.create({
-  baseURL: 'http://10.10.10.133:8000/api',
+  baseURL: 'http://10.10.11.20:8000/api',
   headers: {
     'Authorization': `Bearer ${token}`,
     'Accept': 'application/json'
@@ -162,7 +162,7 @@ onMounted(fetchDropdownData);
 </script>
 
 <style scoped>
-.form-wrapper { display: flex; justify-content: center; padding: 40px 20px; background: #f8fafc; min-height: 100vh; }
+.form-wrapper { display: flex; justify-content: center; padding: 40px 20px; background: linear-gradient(180deg, #ffffff 0%, #06294B 100%); min-height: 100vh; border-radius: 20px; }
 .form-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; max-width: 640px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
 .form-header h2 { font-size: 24px; color: #0f172a; font-weight: 700; margin-bottom: 6px; }
 .form-header p { font-size: 14px; color: #64748b; margin-bottom: 24px; }
