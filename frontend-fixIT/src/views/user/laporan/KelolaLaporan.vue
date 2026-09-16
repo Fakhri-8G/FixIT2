@@ -18,7 +18,7 @@
             @input="debouncedFetch"
           />
         </div>
-        <select v-model="filters.status" @change="fetchMyReports" class="status-select">
+        <select v-model="filters.status" @change="fetchMyReports(1)" class="status-select">
           <option value="">Semua Status</option>
           <option value="reported">Reported</option>
           <option value="verified">Verified</option>
@@ -43,56 +43,82 @@
     </div>
 
     <!-- Grid List Laporan -->
-    <div v-else class="reports-grid">
-      <div v-for="report in reports" :key="report.id" class="report-card">
-        <div>
-          <div class="card-top">
-            <span :class="['badge-status', report.status]">
-              <span class="status-dot"></span>
-              {{ report.status }}
-            </span>
-            <span class="report-id">#{{ report.id }}</span>
+    <div v-else>
+      <div class="reports-grid">
+        <div v-for="report in reports" :key="report?.id" class="report-card">
+          <div>
+            <div class="card-top">
+              <span :class="['badge-status', report?.status]">
+                <span class="status-dot"></span>
+                {{ report?.status }}
+              </span>
+              <span class="report-id">#{{ report?.id }}</span>
+            </div>
+
+            <h3 class="report-title">{{ report?.title }}</h3>
+            <p class="report-desc">{{ report?.description }}</p>
+
+            <div class="report-meta">
+              <div class="meta-item">
+                <span class="meta-icon">📍</span>
+                <span>{{ report?.location?.name || '-' }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-icon">🏷️</span>
+                <span>{{ report?.category?.name || '-' }}</span>
+              </div>
+            </div>
+
+            <!-- Thumbnail Foto Preview -->
+            <div v-if="report?.images && report.images.length" class="thumb-list">
+              <template v-for="img in report.images">
+                <div v-if="img" :key="img.id" class="thumb-wrapper" @click="openDetail(report.id)">
+                  <img :src="img.image_url || img.image" alt="Bukti" />
+                </div>
+              </template>
+            </div>
           </div>
 
-          <h3 class="report-title">{{ report.title }}</h3>
-          <p class="report-desc">{{ report.description }}</p>
-
-          <div class="report-meta">
-            <div class="meta-item">
-              <span class="meta-icon">📍</span>
-              <span>{{ report.location?.name || '-' }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-icon">🏷️</span>
-              <span>{{ report.category?.name || '-' }}</span>
-            </div>
-          </div>
-
-          <!-- Thumbnail Foto Preview -->
-          <div v-if="report.images && report.images.length" class="thumb-list">
-            <div v-for="img in report.images" :key="img.id" class="thumb-wrapper" @click="openDetail(report.id)">
-              <img :src="img.image_url || img.image" alt="Bukti" />
-            </div>
+          <!-- Action Buttons -->
+          <div class="card-actions">
+            <button class="btn-detail" @click="openDetail(report.id)">
+              <span>Detail & Log</span>
+              <span>→</span>
+            </button>
+            
+            <button 
+              v-if="report?.status === 'reported'" 
+              class="btn-delete" 
+              @click="deleteReport(report.id)"
+              title="Hapus Laporan"
+            >
+              🗑️
+            </button>
           </div>
         </div>
+      </div>
 
-        <!-- Action Buttons -->
-        <div class="card-actions">
-          <button class="btn-detail" @click="openDetail(report.id)">
-            <span>Detail & Log</span>
-            <span>→</span>
-          </button>
-          
-          <!-- Hapus Laporan (Hanya jika status 'reported') -->
-          <button 
-            v-if="report.status === 'reported'" 
-            class="btn-delete" 
-            @click="deleteReport(report.id)"
-            title="Hapus Laporan"
-          >
-            🗑️
-          </button>
-        </div>
+      <!-- Control Pagination -->
+      <div v-if="pagination.last_page > 1" class="pagination-wrapper">
+        <button 
+          class="btn-page" 
+          :disabled="pagination.current_page === 1" 
+          @click="changePage(pagination.current_page - 1)"
+        >
+          ← Prev
+        </button>
+
+        <span class="page-info">
+          Halaman <strong>{{ pagination.current_page }}</strong> dari <strong>{{ pagination.last_page }}</strong>
+        </span>
+
+        <button 
+          class="btn-page" 
+          :disabled="pagination.current_page === pagination.last_page" 
+          @click="changePage(pagination.current_page + 1)"
+        >
+          Next →
+        </button>
       </div>
     </div>
 
@@ -128,12 +154,14 @@
         <div class="section-block">
           <h4>Foto Bukti Terlampir ({{ selectedReport.images?.length || 0 }})</h4>
           <div class="image-grid">
-            <div v-for="img in selectedReport.images" :key="img.id" class="image-item">
-              <img :src="img.image_url" alt="Foto Laporan" />
-              <button class="btn-remove-img" @click="deleteSingleImage(img.id)">
-                Hapus Foto
-              </button>
-            </div>
+            <template v-for="img in selectedReport.images">
+              <div v-if="img" :key="img.id" class="image-item">
+                <img :src="img.image_url" alt="Foto Laporan" />
+                <button class="btn-remove-img" @click="deleteSingleImage(img.id)">
+                  Hapus Foto
+                </button>
+              </div>
+            </template>
           </div>
           <p v-if="!selectedReport.images?.length" class="empty-text">Tidak ada foto terlampir.</p>
         </div>
@@ -142,17 +170,19 @@
         <div class="section-block">
           <h4>Riwayat Penanganan Admin</h4>
           <div v-if="selectedReport.updates && selectedReport.updates.length" class="timeline">
-            <div v-for="log in selectedReport.updates" :key="log.id" class="timeline-item">
-              <div class="timeline-dot"></div>
-              <div class="timeline-body">
-                <div class="timeline-header">
-                  <span :class="['badge-status', log.status]">{{ log.status }}</span>
-                  <small class="log-time">{{ formatDate(log.created_at) }}</small>
+            <template v-for="log in selectedReport.updates">
+              <div v-if="log" :key="log.id" class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-body">
+                  <div class="timeline-header">
+                    <span :class="['badge-status', log.status]">{{ log.status }}</span>
+                    <small class="log-time">{{ formatDate(log.created_at) }}</small>
+                  </div>
+                  <p v-if="log.note" class="log-note">"{{ log.note }}"</p>
+                  <span class="log-admin">Oleh: {{ log.admin?.name || 'Admin' }}</span>
                 </div>
-                <p v-if="log.note" class="log-note">"{{ log.note }}"</p>
-                <span class="log-admin">Oleh: {{ log.admin?.name || 'Admin' }}</span>
               </div>
-            </div>
+            </template>
           </div>
           <p v-else class="empty-text">Belum ada pembaruan dari tim admin.</p>
         </div>
@@ -163,7 +193,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import api from '../../../utils/api'
 
 const reports = ref([]);
 const selectedReport = ref(null);
@@ -174,20 +204,39 @@ const filters = ref({
   status: ''
 });
 
-const token = localStorage.getItem('token') || '';
-const api = axios.create({
-  baseURL: 'http://10.10.11.20:8000/api',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Accept': 'application/json'
-  }
+// State Pagination
+const pagination = ref({
+  current_page: 1,
+  last_page: 1,
+  per_page: 10
 });
 
-const fetchMyReports = async () => {
+const fetchMyReports = async (page = 1) => {
   loading.value = true;
   try {
-    const res = await api.get('/reports', { params: filters.value });
-    reports.value = res.data.data || [];
+    const res = await api.get('/reports', { 
+      params: { 
+        ...filters.value, 
+        page, 
+        per_page: 10 // Kirim per_page=10 ke backend
+      } 
+    });
+    
+    const paginatedData = res.data.data;
+    
+    if (paginatedData && Array.isArray(paginatedData.data)) {
+      // Menyimpan data array hasil pagination
+      reports.value = paginatedData.data.filter(item => item !== null && item !== undefined);
+      
+      // Update state pagination
+      pagination.value = {
+        current_page: paginatedData.current_page || page,
+        last_page: paginatedData.last_page || 1,
+        per_page: paginatedData.per_page || 10
+      };
+    } else {
+      reports.value = [];
+    }
   } catch (err) {
     alert(err.response?.data?.message || 'Gagal mengambil data laporan.');
   } finally {
@@ -195,11 +244,17 @@ const fetchMyReports = async () => {
   }
 };
 
+const changePage = (newPage) => {
+  if (newPage >= 1 && newPage <= pagination.value.last_page) {
+    fetchMyReports(newPage);
+  }
+};
+
 let timer = null;
 const debouncedFetch = () => {
   clearTimeout(timer);
   timer = setTimeout(() => {
-    fetchMyReports();
+    fetchMyReports(1); // Reset balik ke page 1 tiap kali nyari keyword baru
   }, 400);
 };
 
@@ -217,7 +272,7 @@ const deleteReport = async (id) => {
   try {
     const res = await api.delete(`/reports/${id}`);
     alert(res.data.message || 'Laporan berhasil dihapus.');
-    fetchMyReports();
+    fetchMyReports(pagination.value.current_page);
   } catch (err) {
     alert(err.response?.data?.message || 'Laporan gagal dihapus.');
   }
@@ -228,8 +283,10 @@ const deleteSingleImage = async (imageId) => {
   try {
     const res = await api.delete(`/report-images/${imageId}`);
     alert(res.data.message || 'Gambar berhasil dihapus.');
-    selectedReport.value.images = selectedReport.value.images.filter(img => img.id !== imageId);
-    fetchMyReports();
+    if (selectedReport.value?.images) {
+      selectedReport.value.images = selectedReport.value.images.filter(img => img && img.id !== imageId);
+    }
+    fetchMyReports(pagination.value.current_page);
   } catch (err) {
     alert(err.response?.data?.message || 'Gagal menghapus foto.');
   }
@@ -247,6 +304,44 @@ onMounted(() => {
   fetchMyReports();
 });
 </script>
+
+<style scoped>
+/* Styling Tambahan Buat Pagination */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 12px;
+}
+
+.btn-page {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.btn-page:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #555;
+}
+</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');

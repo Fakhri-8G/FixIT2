@@ -6,7 +6,6 @@
         <h1 class="title">🛠️ Layanan Pengaduan Fasilitas</h1>
         <p class="subtitle">Pantau statistik, status, dan rekam jejak kerusakan secara realtime.</p>
       </div>
-      
     </header>
 
     <!-- 📊 SECTION CHARTS & GRAPHS 📊 -->
@@ -41,8 +40,8 @@
       </div>
 
       <div class="status-tabs">
-        <button 
-          v-for="tab in listStatus" 
+        <button
+          v-for="tab in listStatus"
           :key="tab.value"
           :class="['tab-btn', { active: statusSelected === tab.value }]"
           @click="gantiStatusFilter(tab.value)"
@@ -66,24 +65,21 @@
 
     <!-- Feed Laporan -->
     <main v-else-if="laporanList.length > 0" class="reports-feed">
-      <article 
-        v-for="item in laporanList" 
-        :key="item.id" 
+      <article
+        v-for="item in laporanList"
+        :key="item.id"
         class="report-card"
       >
         <div class="card-header">
-          <span class="location-tag">📍 {{ item.lokasi_ruangan }}</span>
-          <span :class="['badge-priority', `priority-${item.tingkat_urgensi}`]">
-            {{ formatUrgensi(item.tingkat_urgensi) }}
-          </span>
+          <span class="location-tag">📍 {{ item.location?.name }}</span>
         </div>
 
         <div class="card-body">
           <div class="img-wrapper">
-            <img 
-              :src="item.foto_bukti || '/placeholder-broken.png'" 
-              :alt="item.nama_barang"
-              loading="lazy" 
+            <img
+              :src="item.images?.[0]?.image_url || '/placeholder-broken.png'"
+              :alt="item.title"
+              loading="lazy"
             />
             <span :class="['status-pill', `status-${item.status}`]">
               {{ formatStatus(item.status) }}
@@ -91,11 +87,11 @@
           </div>
 
           <div class="content-wrapper">
-            <h3 class="item-name">{{ item.nama_barang }}</h3>
-            <p class="description">{{ item.deskripsi_kerusakan }}</p>
+            <h3 class="item-name">{{ item.title }}</h3>
+            <p class="description">{{ item.description }}</p>
 
             <div class="meta-info">
-              <span>👤 Pelapor: <strong>{{ item.nama_pelapor || 'Saya' }}</strong></span>
+              <span>👤 Pelapor: <strong>{{ item.user?.name || 'Saya' }}</strong></span>
               <span>📅 {{ formatTanggal(item.created_at) }}</span>
             </div>
           </div>
@@ -120,10 +116,12 @@
     <div v-if="selectedReport" class="modal-backdrop" @click.self="tutupModal">
       <div class="modal-card">
         <button class="modal-close" @click="tutupModal">✕</button>
-        
+
         <div class="modal-header">
           <h2>📜 Rekam Jejak Penanganan</h2>
-          <p class="modal-sub">Barang: <strong>{{ selectedReport.nama_barang }}</strong> ({{ selectedReport.lokasi_ruangan }})</p>
+          <p class="modal-sub">
+            Barang: <strong>{{ selectedReport.title }}</strong> ({{ selectedReport.location?.name }})
+          </p>
         </div>
 
         <div class="modal-body">
@@ -137,9 +135,9 @@
           </div>
 
           <div v-else-if="historyUpdates.length > 0" class="timeline">
-            <div 
-              v-for="update in historyUpdates" 
-              :key="update.id" 
+            <div
+              v-for="update in historyUpdates"
+              :key="update.id"
               class="timeline-item"
             >
               <div class="timeline-dot"></div>
@@ -150,13 +148,13 @@
                   </span>
                   <span class="timeline-date">{{ formatTanggalDetail(update.created_at) }}</span>
                 </div>
-                
-                <p v-if="update.catatan || update.note" class="timeline-note">
-                  "{{ update.catatan || update.note }}"
+
+                <p v-if="update.note" class="timeline-note">
+                  "{{ update.note }}"
                 </p>
-                
+
                 <div class="timeline-admin">
-                  🛠️ Diproses oleh Admin: <strong>{{ update.admin?.name || update.admin?.nama || 'Petugas System' }}</strong>
+                  🛠️ Diproses oleh Admin: <strong>{{ update.admin?.name || 'Petugas System' }}</strong>
                 </div>
               </div>
             </div>
@@ -173,10 +171,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
-import api from '../../utils/api' // Sesuaikan path axios instance lu
+import { useRouter } from 'vue-router'
+import api from '../../utils/api' // Sesuaikan path axios instance
 
-// --- Import Chart.js Dependencies ---
 import {
   Chart as ChartJS,
   Title,
@@ -189,33 +186,31 @@ import {
 } from 'chart.js'
 import { Doughnut, Bar } from 'vue-chartjs'
 
-// Register Module Chart.js
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const router = useRouter()
 
-// ─── State Management ──────────────────────────────────────
 const laporanList      = ref([])
-const rawAllLaporan    = ref([]) // Untuk menyimpan semua data mentah buat Chart
+const rawAllLaporan    = ref([])
 const isLoading        = ref(false)
 const errorMessage     = ref(null)
 const searchQuery      = ref('')
 const statusSelected   = ref('semua')
 
-// State Modal Rekam Jejak
 const selectedReport   = ref(null)
 const historyUpdates   = ref([])
 const isLoadingHistory = ref(false)
 const historyError     = ref(null)
 
 const listStatus = [
-  { label: 'Semua', value: 'semua' },
-  { label: 'Menunggu', value: 'pending' },
-  { label: 'Diproses', value: 'proses' },
-  { label: 'Selesai', value: 'selesai' }
+  { label: 'Semua',        value: 'semua' },
+  { label: 'Dilaporkan',   value: 'reported' },
+  { label: 'Diverifikasi', value: 'verified' },
+  { label: 'Diproses',     value: 'processing' },
+  { label: 'Selesai',      value: 'completed' },
+  { label: 'Ditolak',      value: 'rejected' }
 ]
 
-// ─── Fetch List Laporan Utama ──────────────────────────────
 const fetchLaporanBarang = async () => {
   isLoading.value = true
   errorMessage.value = null
@@ -228,10 +223,9 @@ const fetchLaporanBarang = async () => {
       }
     })
 
-    const fetchedData = response.data?.data?.data || response.data?.data || []
+    const fetchedData = response.data?.data?.data || []
     laporanList.value = fetchedData
-    
-    // Simpan data master jika pencarian kosong untuk kalkulasi grafik
+
     if (!searchQuery.value && statusSelected.value === 'semua') {
       rawAllLaporan.value = fetchedData
     }
@@ -242,14 +236,12 @@ const fetchLaporanBarang = async () => {
   }
 }
 
-// ─── COMPUTED DATA FOR CHARTS ──────────────────────────────
-// 1. Doughnut Chart: Ringkasan Status
 const doughnutChartData = computed(() => {
   const sourceData = rawAllLaporan.value.length > 0 ? rawAllLaporan.value : laporanList.value
-  
-  const pendingCount = sourceData.filter(i => i.status === 'pending').length
-  const prosesCount  = sourceData.filter(i => i.status === 'proses').length
-  const selesaiCount = sourceData.filter(i => i.status === 'selesai').length
+
+  const reportedCount   = sourceData.filter(i => i.status === 'reported').length
+  const processingCount = sourceData.filter(i => i.status === 'processing').length
+  const completedCount  = sourceData.filter(i => i.status === 'completed').length
 
   return {
     labels: ['Menunggu Antrean', 'Dalam Perbaikan', 'Selesai Dikerjakan'],
@@ -258,20 +250,18 @@ const doughnutChartData = computed(() => {
         backgroundColor: ['#d97706', '#2563eb', '#16a34a'],
         hoverBackgroundColor: ['#f59e0b', '#3b82f6', '#22c55e'],
         borderWidth: 0,
-        data: [pendingCount, prosesCount, selesaiCount]
+        data: [reportedCount, processingCount, completedCount]
       }
     ]
   }
 })
 
-// 2. Bar Chart: Kerusakan per Ruangan
 const barChartData = computed(() => {
   const sourceData = rawAllLaporan.value.length > 0 ? rawAllLaporan.value : laporanList.value
-  
-  // Hitung frekuensi laporan berdasarkan lokasi_ruangan
+
   const locationCounts = {}
   sourceData.forEach(item => {
-    const loc = item.lokasi_ruangan || 'Lainnya'
+    const loc = item.location?.name || 'Lainnya'
     locationCounts[loc] = (locationCounts[loc] || 0) + 1
   })
 
@@ -288,7 +278,6 @@ const barChartData = computed(() => {
   }
 })
 
-// Chart Options (Dark Theme Supported)
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -308,15 +297,14 @@ const barOptions = {
   },
   scales: {
     x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-    y: { 
-      ticks: { color: '#94a3b8', stepSize: 1 }, 
+    y: {
+      ticks: { color: '#94a3b8', stepSize: 1 },
       grid: { color: '#334155' },
-      beginAtZero: true 
+      beginAtZero: true
     }
   }
 }
 
-// ─── Fetch Rekam Jejak ─────────────────────────────────────
 const bukaRekamJejak = async (report) => {
   selectedReport.value = report
   historyUpdates.value = []
@@ -342,7 +330,6 @@ const tutupModal = () => {
   historyUpdates.value = []
 }
 
-// ─── Filter & Handlers ─────────────────────────────────────
 let debounceTimer = null
 const handleSearch = () => {
   clearTimeout(debounceTimer)
@@ -361,23 +348,15 @@ const bukaFormLaporan = () => {
   router.push('/lapor-kerusakan')
 }
 
-// ─── Formatters ────────────────────────────────────────────
 const formatStatus = (status) => {
   const map = {
-    pending: '⏳ Menunggu Antrean',
-    proses: '🔨 Dalam Perbaikan',
-    selesai: '✅ Selesai Dikerjakan'
+    reported: '⏳ Dilaporkan',
+    verified: '🔍 Diverifikasi',
+    processing: '🔨 Dalam Perbaikan',
+    completed: '✅ Selesai Dikerjakan',
+    rejected: '❌ Ditolak'
   }
   return map[status] || status
-}
-
-const formatUrgensi = (urgensi) => {
-  const map = {
-    rendah: 'Biasa',
-    sedang: 'Sedang',
-    darurat: '🚨 DARURAT'
-  }
-  return map[urgensi] || urgensi
 }
 
 const formatTanggal = (dateString) => {

@@ -23,6 +23,9 @@ import KelolaPengguna from '../views/admin/pengguna/KelolaPengguna.vue'
 import KelolaLaporan from '../views/user/laporan/KelolaLaporan.vue'
 import TambahLaporan from '../views/user/laporan/TambahLaporan.vue'
 
+//profile
+import KelolaProfile from '../views/profile/KelolaProfile.vue'
+
 //Dashboard
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -127,6 +130,14 @@ const routes = [
     path: '/tambah-laporan',
     name: 'tambah-laporan',
     component: TambahLaporan,
+    meta: { requiresAuth: true }
+  },
+
+  //profile
+  {
+    path: '/profile',
+    name: 'profile',
+    component: KelolaProfile,
     meta: { requiresAuth: true }
   },
 
