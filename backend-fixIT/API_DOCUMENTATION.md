@@ -385,6 +385,84 @@ DELETE /report-images/{image_id}
 
 ---
 
+---
+
+## 👥 Users (Admin Only)
+
+### List Semua Pengguna
+```
+GET /users
+```
+🔒 **Admin only**.
+
+**Query parameter (opsional):**
+| Param | Keterangan |
+|---|---|
+| `keyword` | Cari di `name` dan `email` (partial match) |
+| `role` | Filter berdasarkan role, harus `admin` atau `user` |
+
+**Contoh:**
+```
+GET /users?keyword=budi&role=user
+```
+
+**Response 200:**
+```json
+{
+  "status": true,
+  "message": "Daftar pengguna berhasil diambil.",
+  "data": [
+    {
+      "id": 1,
+      "name": "Admin FixIT",
+      "email": "admin@fixit.com",
+      "role": "admin",
+      "reports_count": 0
+    },
+    {
+      "id": 3,
+      "name": "Budi Santoso",
+      "email": "budi@fixit.com",
+      "role": "user",
+      "reports_count": 4
+    }
+  ]
+}
+```
+> Tidak dipaginasi — mengembalikan seluruh user yang cocok filter sekaligus. Field `reports_count` dihitung otomatis, termasuk user yang belum pernah membuat laporan (`reports_count: 0`).
+
+### Detail 1 Pengguna Beserta Laporannya
+```
+GET /users/{id}
+```
+🔒 **Admin only**.
+
+**Response 200:**
+```json
+{
+  "status": true,
+  "message": "Detail pengguna berhasil diambil.",
+  "data": {
+    "id": 3,
+    "name": "Budi Santoso",
+    "email": "budi@fixit.com",
+    "role": "user",
+    "reports_count": 4,
+    "reports": [
+      {
+        "id": 1,
+        "title": "Proyektor Tidak Menyala",
+        "status": "reported",
+        "category": { "id": 1, "name": "Elektronik" },
+        "location": { "id": 1, "name": "Kelas XII RPL 1" },
+        "images": [ { "id": 1, "image_url": "..." } ]
+      }
+    ]
+  }
+}
+```
+> Field `reports` berisi SEMUA laporan milik user ini (tidak dipaginasi), diurutkan dari yang terbaru.
+
 ## 🔑 Ringkasan Role & Akses
 
 | Aksi | User | Admin |
