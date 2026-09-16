@@ -72,13 +72,13 @@
               <span class="nav-icon">🏠</span>
               <span class="nav-label">Dashboard</span>
             </RouterLink>
-            <RouterLink to="/buat-laporan" class="nav-item" @click="closeMobile">
+            <RouterLink to="/kelola-laporan" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📂</span>
+              <span class="nav-label">Kelola Laporan</span>
+            </RouterLink>
+            <RouterLink to="/tambah-laporan" class="nav-item" @click="closeMobile">
               <span class="nav-icon">➕</span>
               <span class="nav-label">Buat Laporan</span>
-            </RouterLink>
-            <RouterLink to="/laporan-saya" class="nav-item" @click="closeMobile">
-              <span class="nav-icon">📂</span>
-              <span class="nav-label">Laporan Saya</span>
             </RouterLink>
           </template>
 

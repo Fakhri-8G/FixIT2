@@ -110,10 +110,10 @@ const handleSubmit = async () => {
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 440px;
+  max-width: 1000px;
   background: #ffffff;
   border-radius: 16px;
-  padding: 28px;
+  padding: 50px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
   margin: 20px auto;
@@ -197,7 +197,8 @@ const handleSubmit = async () => {
 /* Styling Button Group */
 .button-group {
   display: flex;
-  gap: 12px;
+  gap: 2px;
+  max-width: 250px;
   align-items: center;
 }
 

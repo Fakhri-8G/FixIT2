@@ -199,7 +199,7 @@ onMounted(() => {
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 550px;
+  max-width: 1000px;
   background: #ffffff;
   border-radius: 16px;
   padding: 28px;

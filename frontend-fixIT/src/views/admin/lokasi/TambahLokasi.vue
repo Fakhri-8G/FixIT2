@@ -46,7 +46,7 @@
 
       <!-- Submit & Action Buttons -->
       <div class="button-group">
-        <RouterLink to="/locations" class="btn-cancel">
+        <RouterLink to="/lokasi" class="btn-cancel">
           Batal
         </RouterLink>
         <button type="submit" class="btn-submit" :disabled="loading">
@@ -137,7 +137,7 @@ const handleSubmit = async () => {
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 480px;
+  max-width: 1000px;
   background: #ffffff;
   border-radius: 16px;
   padding: 28px;
@@ -264,6 +264,7 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  max-width: 250px;
   gap: 8px;
   padding: 12px 20px;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);

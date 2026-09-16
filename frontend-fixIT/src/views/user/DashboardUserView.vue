@@ -6,9 +6,7 @@
         <h1 class="title">🛠️ Layanan Pengaduan Fasilitas</h1>
         <p class="subtitle">Pantau statistik, status, dan rekam jejak kerusakan secara realtime.</p>
       </div>
-      <button class="btn btn-create" @click="bukaFormLaporan">
-        ➕ Buat Laporan Baru
-      </button>
+      
     </header>
 
     <!-- 📊 SECTION CHARTS & GRAPHS 📊 -->
@@ -175,7 +173,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import api from '../../utils/api' // Sesuaikan path axios instance lu
 
 // --- Import Chart.js Dependencies ---

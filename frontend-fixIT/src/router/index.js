@@ -19,6 +19,10 @@ import EditLokasi from '../views/admin/lokasi/EditLokasi.vue'
 //pengguna
 import KelolaPengguna from '../views/admin/pengguna/KelolaPengguna.vue'
 
+//laopran
+import KelolaLaporan from '../views/user/laporan/KelolaLaporan.vue'
+import TambahLaporan from '../views/user/laporan/TambahLaporan.vue'
+
 //Dashboard
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -27,6 +31,11 @@ import DashboardUser from '../views/user/DashboardUserView.vue'
 import Tentang from '../views/user/Tentang.vue'
 
 const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: HomeView
+  },
   { 
     path: '/login', 
     name: 'login',
@@ -104,6 +113,20 @@ const routes = [
     path: '/dashboard', 
     name: 'user-dashboard',
     component: DashboardUser,
+    meta: { requiresAuth: true }
+  },
+
+  //laporan
+  {
+    path: '/kelola-laporan',
+    name: 'kelola-laporan',
+    component: KelolaLaporan,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/tambah-laporan',
+    name: 'tambah-laporan',
+    component: TambahLaporan,
     meta: { requiresAuth: true }
   },
 

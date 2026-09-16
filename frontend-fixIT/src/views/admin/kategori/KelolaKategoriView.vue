@@ -104,7 +104,7 @@ const successMessage = ref('');
 const errorMessage = ref('');
 
 // --- Constants -------------------------------------------------------------
-const API_ENDPOINT = 'http://localhost:8000/api/categories';
+const API_ENDPOINT = 'http://10.10.11.20:8000/api/categories';
 const DATE_LOCALE = 'id-ID';
 const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' };
 const MESSAGE_AUTO_HIDE_MS = 4000;
@@ -193,13 +193,13 @@ defineExpose({ fetchCategories });
 
 .card-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  max-width: 900px;
+  max-width: 2000px;
   background: #ffffff;
   border-radius: 16px;
   padding: 28px;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.02);
   border: 1px solid #f1f5f9;
-  margin: 20px auto;
+  margin: 0 auto;
 }
 
 .card-header {
