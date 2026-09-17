@@ -53,38 +53,69 @@
       <h2 class="card-title">Ganti Password</h2>
       
       <form @submit.prevent="handleUpdatePassword" class="form-group">
+        
+        <!-- Password Saat Ini -->
         <div class="field">
           <label class="label">Password Saat Ini</label>
-          <input 
-            v-model="passwordForm.current_password" 
-            type="password" 
-            class="input"
-            :class="{'input-error': passwordErrors.current_password}"
-            required 
-          />
+          <div class="password-wrapper">
+            <input 
+              v-model="passwordForm.current_password" 
+              :type="showPassword.current ? 'text' : 'password'" 
+              class="input"
+              :class="{'input-error': passwordErrors.current_password}"
+              required 
+            />
+            <button 
+              type="button" 
+              class="toggle-eye" 
+              @click="showPassword.current = !showPassword.current"
+            >
+              {{ showPassword.current ? '🙈' : '👁️' }}
+            </button>
+          </div>
           <p v-if="passwordErrors.current_password" class="error-text">{{ passwordErrors.current_password[0] }}</p>
         </div>
 
+        <!-- Password Baru -->
         <div class="field">
           <label class="label">Password Baru</label>
-          <input 
-            v-model="passwordForm.password" 
-            type="password" 
-            class="input"
-            :class="{'input-error': passwordErrors.password}"
-            required 
-          />
+          <div class="password-wrapper">
+            <input 
+              v-model="passwordForm.password" 
+              :type="showPassword.new ? 'text' : 'password'" 
+              class="input"
+              :class="{'input-error': passwordErrors.password}"
+              required 
+            />
+            <button 
+              type="button" 
+              class="toggle-eye" 
+              @click="showPassword.new = !showPassword.new"
+            >
+              {{ showPassword.new ? '🙈' : '👁️' }}
+            </button>
+          </div>
           <p v-if="passwordErrors.password" class="error-text">{{ passwordErrors.password[0] }}</p>
         </div>
 
+        <!-- Konfirmasi Password Baru -->
         <div class="field">
           <label class="label">Konfirmasi Password Baru</label>
-          <input 
-            v-model="passwordForm.password_confirmation" 
-            type="password" 
-            class="input"
-            required 
-          />
+          <div class="password-wrapper">
+            <input 
+              v-model="passwordForm.password_confirmation" 
+              :type="showPassword.confirm ? 'text' : 'password'" 
+              class="input"
+              required 
+            />
+            <button 
+              type="button" 
+              class="toggle-eye" 
+              @click="showPassword.confirm = !showPassword.confirm"
+            >
+              {{ showPassword.confirm ? '🙈' : '👁️' }}
+            </button>
+          </div>
         </div>
 
         <button 
@@ -102,9 +133,17 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '../../utils/api';
+
 // State Data & Form
 const profileForm = reactive({ name: '', email: '' })
 const passwordForm = reactive({ current_password: '', password: '', password_confirmation: '' })
+
+// State Visibility Password (Hanya nambahin ini doang)
+const showPassword = reactive({
+  current: false,
+  new: false,
+  confirm: false
+})
 
 // State Handling Error Validasi 422
 const profileErrors = ref({})
@@ -257,6 +296,37 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: #374151;
+}
+
+/* Wrapper Password biar Eye Icon posisinya rapi */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-wrapper .input {
+  padding-right: 40px; /* Biar teks input ga ketutupan ikon */
+}
+
+.toggle-eye {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.toggle-eye:hover {
+  opacity: 1;
 }
 
 .input {
