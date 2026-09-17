@@ -26,6 +26,9 @@ import TambahLaporan from '../views/user/laporan/TambahLaporan.vue'
 //profile
 import KelolaProfile from '../views/profile/KelolaProfile.vue'
 
+//kontak
+import KontakView from '../views/kontak/KontakView.vue'
+
 //Dashboard
 import DashboardAdmin from '../views/admin/DashboardKerusakanView.vue'
 import DashboardUser from '../views/user/DashboardUserView.vue'
@@ -139,6 +142,13 @@ const routes = [
     name: 'profile',
     component: KelolaProfile,
     meta: { requiresAuth: true }
+  },
+
+  //kontak
+  {
+    path: '/kontak',
+    name: 'kontak',
+    component: KontakView,
   },
 
   {

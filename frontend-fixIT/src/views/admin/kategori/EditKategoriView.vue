@@ -85,7 +85,7 @@ const successMessage = ref('');
 const validationError = ref('');
 
 // --- Setup Base URL & Header sesuai Dokumen FixIT --------------------------
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.20:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://10.10.11.145:8000';
 const ENDPOINT = `${API_BASE_URL}/api/categories/${categoryId}`;
 
 const getAuthHeaders = () => {

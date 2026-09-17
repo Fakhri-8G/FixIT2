@@ -104,7 +104,7 @@ const successMessage = ref('');
 const errorMessage = ref('');
 
 // --- Constants -------------------------------------------------------------
-const API_ENDPOINT = 'http://10.10.11.20:8000/api/categories';
+const API_ENDPOINT = 'http://10.10.11.145:8000/api/categories';
 const DATE_LOCALE = 'id-ID';
 const DATE_FORMAT_OPTIONS = { year: 'numeric', month: 'short', day: 'numeric' };
 const MESSAGE_AUTO_HIDE_MS = 4000;
