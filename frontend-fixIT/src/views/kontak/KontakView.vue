@@ -97,7 +97,7 @@
                   </div>
                   <div class="detail-row">
                     <span>🕒 Jam Operasional Kantor:</span>
-                    <strong>Senin - Jumat (08.00 - 17.00 WIB)</strong>
+                    <strong>Senin - Jumat (08.00 - 15.00 WIB)</strong>
                   </div>
                 </div>
               </div>
@@ -225,6 +225,7 @@ const faqs = ref([
 }
 
 .main-title {
+  color: #FFFEFF;
   font-size: 36px;
   font-weight: 800;
   margin: 0;

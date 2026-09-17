@@ -20,26 +20,37 @@
         </div>
 
         <!-- Row: Kategori & Lokasi -->
+        <!-- Row: Kategori & Lokasi -->
         <div class="form-row">
           <div class="form-group">
             <label>Kategori</label>
-            <select v-model="form.category_id" required>
-              <option value="" disabled selected>-- Pilih Kategori --</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
+            <div class="select-wrapper">
+              <select v-model="form.category_id" required>
+                <option value="" disabled selected>-- Pilih Kategori --</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
+              </select>
+              <span class="select-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </div>
             <span v-if="errors.category_id" class="field-error">{{ errors.category_id[0] }}</span>
           </div>
-
+        
           <div class="form-group">
             <label>Lokasi</label>
-            <select v-model="form.location_id" required>
-              <option value="" disabled selected>-- Pilih Lokasi --</option>
-              <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-                {{ loc.name }}
-              </option>
-            </select>
+            <div class="select-wrapper">
+              <select v-model="form.location_id" required>
+                <option value="" disabled selected>-- Pilih Lokasi --</option>
+                <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                  {{ loc.name }}
+                </option>
+              </select>
+              <span class="select-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </div>
             <span v-if="errors.location_id" class="field-error">{{ errors.location_id[0] }}</span>
           </div>
         </div>
@@ -385,5 +396,73 @@ onMounted(fetchDropdownData);
   font-size: 9px;
   padding: 1px 4px;
   border-radius: 4px;
+}
+
+/* Custom Select Dropdown Styling */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 11px 40px 11px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* State Focus / Active */
+.select-wrapper select:focus {
+  background-color: #ffffff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  outline: none;
+}
+
+/* State Hover */
+.select-wrapper select:hover {
+  border-color: #94a3b8;
+  background-color: #ffffff;
+}
+
+/* Icon Panah Custom */
+.select-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.select-wrapper:focus-within .select-icon {
+  color: #4f46e5;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* Styling Opsi Dropdown */
+.select-wrapper select option {
+  background-color: #ffffff;
+  color: #0f172a;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.select-wrapper select option:disabled {
+  color: #94a3b8;
 }
 </style>
