@@ -72,13 +72,13 @@
               <span class="nav-icon">🏠</span>
               <span class="nav-label">Dashboard</span>
             </RouterLink>
-            <RouterLink to="/kelola-laporan" class="nav-item" @click="closeMobile">
-              <span class="nav-icon">📂</span>
-              <span class="nav-label">Kelola Laporan</span>
-            </RouterLink>
             <RouterLink to="/tambah-laporan" class="nav-item" @click="closeMobile">
               <span class="nav-icon">➕</span>
               <span class="nav-label">Buat Laporan</span>
+            </RouterLink>
+            <RouterLink to="/kelola-laporan" class="nav-item" @click="closeMobile">
+              <span class="nav-icon">📂</span>
+              <span class="nav-label">Kelola Laporan</span>
             </RouterLink>
           </template>
 
@@ -134,21 +134,13 @@
             <span class="system-status">● Realtime Sync</span>
           </div>
         </div>
-
         <div class="topbar-right">
-          <button class="btn-icon-action" title="Notifikasi">
-            🔔
-            <span class="dot-indicator"></span>
-          </button>
-
           <div class="divider"></div>
 
           <div class="user-profile-chip">
-            <img
-              class="avatar-img"
-              :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${userName || 'user'}`"
-              alt="User Avatar"
-            />
+            <div class="avatar-circle">
+  {{ userName ? userName.charAt(0).toUpperCase() : 'U' }}
+</div>
             <div class="user-details">
               <span class="user-display-name">{{ userName || 'Pengguna' }}</span>
               <span class="user-role-badge">{{ isAdmin ? 'Administrator' : 'Siswa / Pelapor' }}</span>
@@ -707,6 +699,20 @@ html, body {
   padding: 24px;
   background: var(--bg-main);
   width: 100%;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4A90E2; /* Ubah warna background sesuka lo */
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  text-transform: uppercase;
 }
 
 /* Responsive Mobile Breakpoint */

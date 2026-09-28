@@ -20,26 +20,37 @@
         </div>
 
         <!-- Row: Kategori & Lokasi -->
+        <!-- Row: Kategori & Lokasi -->
         <div class="form-row">
           <div class="form-group">
             <label>Kategori</label>
-            <select v-model="form.category_id" required>
-              <option value="" disabled selected>-- Pilih Kategori --</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
+            <div class="select-wrapper">
+              <select v-model="form.category_id" required>
+                <option value="" disabled selected>-- Pilih Kategori --</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.name }}
+                </option>
+              </select>
+              <span class="select-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </div>
             <span v-if="errors.category_id" class="field-error">{{ errors.category_id[0] }}</span>
           </div>
-
+        
           <div class="form-group">
             <label>Lokasi</label>
-            <select v-model="form.location_id" required>
-              <option value="" disabled selected>-- Pilih Lokasi --</option>
-              <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-                {{ loc.name }}
-              </option>
-            </select>
+            <div class="select-wrapper">
+              <select v-model="form.location_id" required>
+                <option value="" disabled selected>-- Pilih Lokasi --</option>
+                <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                  {{ loc.name }}
+                </option>
+              </select>
+              <span class="select-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </div>
             <span v-if="errors.location_id" class="field-error">{{ errors.location_id[0] }}</span>
           </div>
         </div>
@@ -56,19 +67,57 @@
           <span v-if="errors.description" class="field-error">{{ errors.description[0] }}</span>
         </div>
 
-        <!-- Upload Foto -->
+        <!-- Upload Foto Modern -->
         <div class="form-group">
           <label>Foto Bukti (1 - 5 foto, Maks. 2MB/file)</label>
-          <div class="file-input-wrapper">
+          
+          <!-- Dropzone Box -->
+          <div 
+            class="dropzone-box"
+            :class="{ 'is-dragover': isDragging }"
+            @dragover.prevent="isDragging = true"
+            @dragleave.prevent="isDragging = false"
+            @drop.prevent="handleDrop"
+            @click="triggerFileInput"
+          >
             <input 
+              ref="fileInputRef"
               type="file" 
               multiple 
               accept="image/png, image/jpeg, image/jpg" 
+              class="hidden-file-input"
               @change="handleFileUpload" 
-              required 
             />
+            
+            <div class="dropzone-content">
+              <div class="upload-icon">📸</div>
+              <p class="dropzone-text">
+                <strong>Klik untuk unggah</strong> atau seret foto ke sini
+              </p>
+              <span class="dropzone-hint">Format: JPG, JPEG, PNG (Maksimal 5 foto)</span>
+            </div>
           </div>
-          <small class="hint">Format yang didukung: JPG, JPEG, PNG.</small>
+
+          <!-- Preview Grid -->
+          <div v-if="imagePreviews.length > 0" class="preview-grid">
+            <div 
+              v-for="(img, index) in imagePreviews" 
+              :key="index" 
+              class="preview-item"
+            >
+              <img :src="img.url" :alt="'Preview ' + index" class="preview-img" />
+              <button 
+                type="button" 
+                class="btn-remove-img" 
+                title="Hapus Foto"
+                @click.stop="removeImage(index)"
+              >
+                &times;
+              </button>
+              <span class="file-size-badge">{{ img.size }}</span>
+            </div>
+          </div>
+
           <span v-if="errors.images" class="field-error">{{ errors.images[0] }}</span>
         </div>
 
@@ -83,7 +132,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
+
+const router = useRouter();
 
 const form = ref({
   title: '',
@@ -93,6 +145,11 @@ const form = ref({
   images: []
 });
 
+// State Khusus Handling Upload Foto
+const fileInputRef = ref(null);
+const imagePreviews = ref([]);
+const isDragging = ref(false);
+
 const categories = ref([]);
 const locations = ref([]);
 const errors = ref({});
@@ -101,7 +158,7 @@ const submitting = ref(false);
 // Tembak API pake Header Token
 const token = localStorage.getItem('token') || '';
 const api = axios.create({
-  baseURL: 'http://10.10.11.20:8000/api',
+  baseURL: 'http://10.10.11.145:8000/api',
   headers: {
     'Authorization': `Bearer ${token}`,
     'Accept': 'application/json'
@@ -122,11 +179,65 @@ const fetchDropdownData = async () => {
   }
 };
 
+// Functions untuk Upload Foto
+const triggerFileInput = () => {
+  fileInputRef.value.click();
+};
+
+const formatSize = (bytes) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
+
+const processFiles = (files) => {
+  const selectedFiles = Array.from(files);
+  
+  if (form.value.images.length + selectedFiles.length > 5) {
+    alert('Maksimal hanya bisa mengunggah 5 foto!');
+    return;
+  }
+
+  selectedFiles.forEach((file) => {
+    if (file.size > 2 * 1024 * 1024) {
+      alert(`File "${file.name}" melebihi batas 2MB!`);
+      return;
+    }
+
+    form.value.images.push(file);
+    imagePreviews.value.push({
+      url: URL.createObjectURL(file),
+      size: formatSize(file.size)
+    });
+  });
+};
+
 const handleFileUpload = (e) => {
-  form.value.images = Array.from(e.target.files);
+  processFiles(e.target.files);
+  e.target.value = '';
+};
+
+const handleDrop = (e) => {
+  isDragging.value = false;
+  if (e.dataTransfer.files) {
+    processFiles(e.dataTransfer.files);
+  }
+};
+
+const removeImage = (index) => {
+  URL.revokeObjectURL(imagePreviews.value[index].url);
+  imagePreviews.value.splice(index, 1);
+  form.value.images.splice(index, 1);
 };
 
 const submitReport = async () => {
+  if (form.value.images.length === 0) {
+    alert('Wajib melampirkan minimal 1 foto bukti!');
+    return;
+  }
+
   submitting.value = true;
   errors.value = {};
 
@@ -145,8 +256,14 @@ const submitReport = async () => {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     alert(res.data.message || 'Laporan berhasil terkirim!');
-    // Reset Form
+    
+    // Cleanup Preview URLs & Reset Form
+    imagePreviews.value.forEach(img => URL.revokeObjectURL(img.url));
+    imagePreviews.value = [];
     form.value = { title: '', description: '', category_id: '', location_id: '', images: [] };
+
+    // Redirect otomatis
+    router.push('/kelola-laporan'); 
   } catch (err) {
     if (err.response?.status === 422) {
       errors.value = err.response.data.errors || {};
@@ -200,4 +317,152 @@ onMounted(fetchDropdownData);
 }
 .btn-submit:hover { background: #4338ca; }
 .btn-submit:disabled { background: #94a3b8; cursor: not-allowed; }
+
+/* Styles Input Foto Modern */
+.hidden-file-input { display: none; }
+
+.dropzone-box {
+  border: 2px dashed #cbd5e1;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropzone-box:hover,
+.dropzone-box.is-dragover {
+  border-color: #6366f1;
+  background-color: #eef2ff;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-icon { font-size: 28px; }
+.dropzone-text { font-size: 13px; color: #334155; margin: 0; }
+.dropzone-text strong { color: #4f46e5; }
+.dropzone-hint { font-size: 11px; color: #94a3b8; }
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.preview-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.preview-img { width: 100%; height: 100%; object-fit: cover; }
+
+.btn-remove-img {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-img:hover { background-color: #dc2626; }
+
+.file-size-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background-color: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* Custom Select Dropdown Styling */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 11px 40px 11px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* State Focus / Active */
+.select-wrapper select:focus {
+  background-color: #ffffff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  outline: none;
+}
+
+/* State Hover */
+.select-wrapper select:hover {
+  border-color: #94a3b8;
+  background-color: #ffffff;
+}
+
+/* Icon Panah Custom */
+.select-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.select-wrapper:focus-within .select-icon {
+  color: #4f46e5;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* Styling Opsi Dropdown */
+.select-wrapper select option {
+  background-color: #ffffff;
+  color: #0f172a;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.select-wrapper select option:disabled {
+  color: #94a3b8;
+}
 </style>

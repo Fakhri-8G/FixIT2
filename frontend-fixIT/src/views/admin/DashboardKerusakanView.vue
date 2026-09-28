@@ -202,7 +202,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import api from '../../utils/api'
 
 const router = useRouter()
