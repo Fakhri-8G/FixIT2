@@ -23,7 +23,7 @@ class ReportUpdateController extends Controller
                 return $this->error('Anda tidak memiliki akses ke laporan ini.', 403);
             }
 
-            $updates = $report->updates()->with('admin')->latest()->get();
+            $updates = $report->updates()->with(['admin', 'images'])->latest()->get();            
             return $this->success($updates, 'Riwayat status laporan berhasil diambil.');
         } catch (Exception $e) {
             return $this->error('Terjadi kesalahan pada server.', 500);
