@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReportUpdateController;
+use App\Http\Controllers\Api\ReportFeedbackController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user}', [UserController::class, 'show']);
+
+    // Feedback & Complaint routes
+    Route::post('/reports/{report}/feedback', [ReportFeedbackController::class, 'storeFeedback']);
+    Route::post('/reports/{report}/complaint', [ReportFeedbackController::class, 'storeComplaint']);
 
     // Profil routes
     Route::get('/profile', [ProfileController::class, 'show']);
