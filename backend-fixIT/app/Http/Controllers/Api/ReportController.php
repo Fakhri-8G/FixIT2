@@ -8,6 +8,7 @@ use App\Models\ReportImage;
 use App\Traits\ApiResponse;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -21,7 +22,7 @@ class ReportController extends Controller
         try {
             $user = $request->user();
 
-            $query = Report::with(['category', 'location', 'images']);
+            $query = Report::with(['category', 'location', 'images', 'updates.admin', 'updates.images', 'feedbacks']);
 
             if ($user->role === 'admin') {
                 $query->with('user');
@@ -108,7 +109,7 @@ class ReportController extends Controller
                 return $this->error('Anda tidak memiliki akses ke laporan ini.', 403);
             }
 
-            $report->load(['user', 'category', 'location', 'updates.admin', 'images']);
+            $report->load(['user', 'category', 'location', 'images', 'updates.admin', 'updates.images', 'feedbacks']);
 
             return $this->success($report, 'Detail laporan berhasil diambil.');
         } catch (Exception $e) {
@@ -117,33 +118,54 @@ class ReportController extends Controller
     }
 
     // ADMIN: update status laporan
-    public function update(Request $request, Report $report)
-    {
-        try {
-            if ($request->user()->role !== 'admin') {
-                return $this->error('Hanya admin yang bisa mengubah status laporan.', 403);
-            }
+        public function update(Request $request, Report $report)
+        {
+            try {
+                if ($request->user()->role !== 'admin') {
+                    return $this->error('Hanya admin yang bisa mengubah status laporan.', 403);
+                }
 
-            $validated = $request->validate([
-                'status' => 'required|in:reported,verified,processing,completed,rejected',
-                'note' => 'nullable|string',
-            ]);
+                $validated = $request->validate([
+                    'status' => 'required|in:reported,verified,processing,completed,rejected',
+                    'note' => 'nullable|string|max:1000',
+                    'images' => 'nullable|array|max:5',
+                    'images.*' => 'image|mimes:jpeg,png,jpg|max:2048',
+                ]);
 
-            $report->update(['status' => $validated['status']]);
+                // Foto bukti wajib saat laporan BARU diselesaikan
+                if ($validated['status'] === 'completed'
+                    && $report->status !== 'completed'
+                    && !$request->hasFile('images')) {
+                    throw ValidationException::withMessages([
+                        'images' => ['Foto bukti perbaikan wajib diunggah saat menyelesaikan laporan.'],
+                    ]);
+                    }
 
-            $report->updates()->create([
-                'admin_id' => $request->user()->id,
-                'status' => $validated['status'],
-                'note' => $validated['note'] ?? null,
-            ]);
+                    DB::transaction(function () use ($request, $report, $validated) {
+                        $report->update(['status' => $validated['status']]);
 
-            return $this->success($report->load('updates'), 'Status laporan berhasil diperbarui.');
-        } catch (ValidationException $e) {
-            return $this->error('Validasi gagal.', 422, $e->errors());
-        } catch (Exception $e) {
-            return $this->error('Terjadi kesalahan pada server.', 500);
+                        $update = $report->updates()->create([
+                            'admin_id' => $request->user()->id,
+                            'status' => $validated['status'],
+                            'note' => $validated['note'] ?? null,
+                        ]);
+
+                        foreach ($request->file('images') ?? [] as $image) {
+                            $path = $image->store('report-updates', 'public');
+                            $update->images()->create(['image_path' => $path]);
+                        }
+                    });
+
+                    return $this->success(
+                        $report->load(['updates.admin', 'updates.images']),
+                        'Status laporan berhasil diperbarui.'
+                    );
+                } catch (ValidationException $e) {
+                    return $this->error('Validasi gagal.', 422, $e->errors());
+                } catch (Exception $e) {
+                    return $this->error('Terjadi kesalahan pada server.', 500);
+                }
         }
-    }
 
     // USER: hapus laporan miliknya sendiri (hanya jika status masih 'reported')
     public function destroy(Request $request, Report $report)

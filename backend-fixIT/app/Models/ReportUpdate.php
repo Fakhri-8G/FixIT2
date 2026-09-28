@@ -22,4 +22,9 @@ class ReportUpdate extends Model
     {
         return $this->belongsTo(User::class, 'admin_id');
     }
+
+    public function images()
+    {
+        return $this->hasMany(ReportUpdateImage::class);
+    }
 }

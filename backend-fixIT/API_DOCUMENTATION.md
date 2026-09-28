@@ -463,6 +463,76 @@ GET /users/{id}
 ```
 > Field `reports` berisi SEMUA laporan milik user ini (tidak dipaginasi), diurutkan dari yang terbaru.
 
+## 📸 Foto Bukti Perbaikan (Before / After)
+
+- **Before** = foto dari pelapor: `report.images[]`
+- **After** = foto bukti dari admin: `report.updates[].images[]` (ambil dari update terakhir yang `status === "completed"`)
+
+### Update Status + Foto Bukti (Admin Only)
+```
+POST /reports/{id}      ← wajib POST + field _method=PUT (bukan PUT langsung, karena ada upload file)
+```
+**Body → `multipart/form-data`:**
+| Key | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| _method | text | ✅ (kalau ada file) | isi `PUT` |
+| status | text | ✅ | salah satu dari 5 status valid |
+| note | text | ❌ | max 1000 karakter |
+| images[] | file | ⚠️ | **Wajib** saat laporan BARU diubah ke `completed`. 1-5 file, jpg/jpeg/png, max 2MB per file |
+
+> Update TANPA foto (status selain `completed`, atau edit catatan pada laporan yang sudah `completed`) tetap bisa dikirim sebagai `PUT /reports/{id}` JSON biasa.
+
+**Struktur `updates[]` (setelah perubahan):**
+```json
+{
+  "id": 4,
+  "status": "completed",
+  "note": "Lampu sudah diganti baru",
+  "admin": { "id": 1, "name": "Admin FixIT" },
+  "images": [ { "id": 1, "image_url": "http://127.0.0.1:8000/storage/report-updates/abc.jpg" } ],
+  "created_at": "..."
+}
+```
+> Kalau `admin` bernilai `null`, entri itu adalah **komplain dari pelapor**, bukan aksi admin.
+
+> `GET /reports` (list), `GET /reports/{id}`, dan `GET /reports/{id}/updates` sekarang menyertakan `updates` beserta `images`. List dan detail juga menyertakan `feedbacks`.
+
+---
+
+## 💬 Feedback & Komplain (User Pemilik Laporan)
+
+Syarat umum: user harus **pemilik laporan**, dan status laporan harus **`completed`**.
+
+### Beri Feedback
+```
+POST /reports/{id}/feedback
+```
+```json
+{ "rating": 5, "comment": "Cepat ditangani" }
+```
+- `rating` wajib, integer 1-5. `comment` opsional (max 1000)
+- Hanya 1 feedback per laporan (kedua kali → 422)
+
+### Ajukan Komplain
+```
+POST /reports/{id}/complaint
+```
+```json
+{ "comment": "Lampunya masih berkedip" }
+```
+- `comment` wajib, 10-1000 karakter
+- Tidak bisa jika sudah pernah memberi feedback
+- **Efek otomatis:** status laporan kembali ke `processing`, dan tercatat di riwayat (`updates[]`) dengan `admin: null` dan note berawalan "Komplain dari pelapor: ..."
+
+**Struktur `feedbacks[]` pada laporan:**
+```json
+{ "id": 1, "report_id": 2, "user_id": 3, "type": "feedback" | "complaint", "rating": 5, "comment": "...", "created_at": "..." }
+```
+
+**Error umum:** `403` bukan pemilik laporan · `422` status bukan `completed`, sudah pernah feedback, atau validasi gagal.
+
+---
+
 ## 🔑 Ringkasan Role & Akses
 
 | Aksi | User | Admin |
