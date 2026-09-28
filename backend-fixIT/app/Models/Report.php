@@ -36,4 +36,9 @@ class Report extends Model
     {
         return $this->hasMany(ReportImage::class);
     }
+
+    public function feedbacks()
+    {
+        return $this->hasMany(ReportFeedback::class);
+    }
 }
