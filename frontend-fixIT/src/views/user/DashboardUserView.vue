@@ -1,34 +1,59 @@
 <template>
   <div class="dashboard-wrapper">
     <!-- Header Dashboard -->
-    <header class="dashboard-header">
+    <header class="dashboard-header animate-fade-in">
       <div>
         <h1 class="title">🛠️ Layanan Pengaduan Fasilitas</h1>
         <p class="subtitle">Pantau statistik, status, dan rekam jejak kerusakan secara realtime.</p>
       </div>
     </header>
 
-    <!-- 📊 SECTION CHARTS & GRAPHS 📊 -->
-    <section class="charts-section">
-      <div class="chart-card">
+    <!-- 📊 SECTION STATS & LIST RINGKASAN 📊 -->
+    <section class="summary-section animate-slide-up">
+      <!-- Card Statistik Status -->
+      <div class="summary-card">
         <h3>📊 Ringkasan Status Laporan</h3>
-        <div class="chart-container">
-          <Doughnut v-if="!isLoading" :data="doughnutChartData" :options="chartOptions" />
-          <div v-else class="chart-loading">Memuat grafik...</div>
+        <div v-if="isLoading" class="skeleton-container">
+          <div class="skeleton-line" v-for="n in 3" :key="n"></div>
+        </div>
+        <div v-else class="status-list-grid">
+          <div class="stat-item reported">
+            <span class="stat-label">⏳ Menunggu Antrean</span>
+            <span class="stat-value">{{ countByStatus('reported') }}</span>
+          </div>
+          <div class="stat-item processing">
+            <span class="stat-label">🔨 Dalam Perbaikan</span>
+            <span class="stat-value">{{ countByStatus('processing') }}</span>
+          </div>
+          <div class="stat-item completed">
+            <span class="stat-label">✅ Selesai Dikerjakan</span>
+            <span class="stat-value">{{ countByStatus('completed') }}</span>
+          </div>
         </div>
       </div>
 
-      <div class="chart-card">
+      <!-- Card Sebaran Kerusakan per Ruangan -->
+      <div class="summary-card">
         <h3>📍 Sebaran Kerusakan per Ruangan</h3>
-        <div class="chart-container">
-          <Bar v-if="!isLoading" :data="barChartData" :options="barOptions" />
-          <div v-else class="chart-loading">Memuat grafik...</div>
+        <div v-if="isLoading" class="skeleton-container">
+          <div class="skeleton-line" v-for="n in 3" :key="n"></div>
         </div>
+        <div v-else-if="locationSummaryList.length > 0" class="location-summary-list">
+          <div 
+            v-for="(loc, index) in locationSummaryList" 
+            :key="index" 
+            class="location-row"
+          >
+            <span class="loc-name">📍 {{ loc.name }}</span>
+            <span class="loc-badge">{{ loc.total }} Laporan</span>
+          </div>
+        </div>
+        <div v-else class="summary-empty">Belum ada data ruangan.</div>
       </div>
     </section>
 
     <!-- Filter & Search Toolbar -->
-    <section class="toolbar-section">
+    <section class="toolbar-section animate-slide-up">
       <div class="search-input-group">
         <span class="search-icon">🔍</span>
         <input
@@ -51,14 +76,14 @@
       </div>
     </section>
 
-    <!-- State Loading Utama -->
+    <!-- State Loading Utama (Skeleton Feed) -->
     <div v-if="isLoading" class="state-container">
-      <div class="spinner"></div>
-      <p>Mengambil data laporan...</p>
+      <div class="spinner-pulse"></div>
+      <p class="loading-text">Sedang menyinkronkan data terbaru...</p>
     </div>
 
     <!-- State Error Utama -->
-    <div v-else-if="errorMessage" class="state-container error-box">
+    <div v-else-if="errorMessage" class="state-container error-box animate-scale-up">
       <p>🚨 {{ errorMessage }}</p>
       <button class="btn-retry" @click="fetchLaporanBarang">Coba Lagi</button>
     </div>
@@ -66,9 +91,10 @@
     <!-- Feed Laporan -->
     <main v-else-if="laporanList.length > 0" class="reports-feed">
       <article
-        v-for="item in laporanList"
+        v-for="(item, index) in laporanList"
         :key="item.id"
-        class="report-card"
+        class="report-card animate-stagger"
+        :style="{ '--stagger-index': index }"
       >
         <div class="card-header">
           <span class="location-tag">📍 {{ item.location?.name }}</span>
@@ -106,15 +132,15 @@
     </main>
 
     <!-- Empty State -->
-    <div v-else class="state-container empty-box">
-      <div class="empty-icon">📂</div>
+    <div v-else class="state-container empty-box animate-scale-up">
+      <div class="empty-icon bounce-animation">📂</div>
       <h3>Belum Ada Laporan Terdata</h3>
       <p>Tidak ada laporan pengaduan pada filter ini.</p>
     </div>
 
     <!-- MODAL REKAM JEJAK -->
-    <div v-if="selectedReport" class="modal-backdrop" @click.self="tutupModal">
-      <div class="modal-card">
+    <div v-if="selectedReport" class="modal-backdrop animate-fade-in" @click.self="tutupModal">
+      <div class="modal-card animate-scale-up">
         <button class="modal-close" @click="tutupModal">✕</button>
 
         <div class="modal-header">
@@ -126,35 +152,39 @@
 
         <div class="modal-body">
           <div v-if="isLoadingHistory" class="modal-state">
-            <div class="spinner"></div>
-            <p>Mengambil riwayat dari server...</p>
+            <div class="spinner-pulse"></div>
+            <p>Melacak riwayat petugas...</p>
           </div>
 
           <div v-else-if="historyError" class="modal-state error-box">
             <p>⚠️ {{ historyError }}</p>
           </div>
 
-          <div v-else-if="historyUpdates.length > 0" class="timeline">
+          <div v-else-if="historyUpdates.length > 0" class="ecommerce-timeline">
             <div
-              v-for="update in historyUpdates"
+              v-for="(update, index) in historyUpdates"
               :key="update.id"
-              class="timeline-item"
+              :class="['track-item', { 'is-latest': index === 0 }]"
             >
-              <div class="timeline-dot"></div>
-              <div class="timeline-content">
-                <div class="timeline-header">
+              <div class="track-node">
+                <div class="track-dot pulse-dot"></div>
+                <div class="track-line" v-if="index !== historyUpdates.length - 1"></div>
+              </div>
+
+              <div class="track-detail">
+                <div class="track-top">
                   <span :class="['status-pill', `status-${update.status}`]">
                     {{ formatStatus(update.status) }}
                   </span>
-                  <span class="timeline-date">{{ formatTanggalDetail(update.created_at) }}</span>
+                  <span class="track-date">{{ formatTanggalDetail(update.created_at) }}</span>
                 </div>
 
-                <p v-if="update.note" class="timeline-note">
-                  "{{ update.note }}"
+                <p v-if="update.note" class="track-note">
+                  {{ update.note }}
                 </p>
 
-                <div class="timeline-admin">
-                  🛠️ Diproses oleh Admin: <strong>{{ update.admin?.name || 'Petugas System' }}</strong>
+                <div class="track-handler">
+                  👤 Petugas/Admin: <strong>{{ update.admin?.name || 'Sistem Otomatis' }}</strong>
                 </div>
               </div>
             </div>
@@ -172,21 +202,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../utils/api' // Sesuaikan path axios instance
-
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  ArcElement
-} from 'chart.js'
-import { Doughnut, Bar } from 'vue-chartjs'
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
+import api from '../../utils/api'
 
 const router = useRouter()
 
@@ -236,74 +252,24 @@ const fetchLaporanBarang = async () => {
   }
 }
 
-const doughnutChartData = computed(() => {
+const countByStatus = (statusName) => {
   const sourceData = rawAllLaporan.value.length > 0 ? rawAllLaporan.value : laporanList.value
+  return sourceData.filter(i => i.status === statusName).length
+}
 
-  const reportedCount   = sourceData.filter(i => i.status === 'reported').length
-  const processingCount = sourceData.filter(i => i.status === 'processing').length
-  const completedCount  = sourceData.filter(i => i.status === 'completed').length
-
-  return {
-    labels: ['Menunggu Antrean', 'Dalam Perbaikan', 'Selesai Dikerjakan'],
-    datasets: [
-      {
-        backgroundColor: ['#d97706', '#2563eb', '#16a34a'],
-        hoverBackgroundColor: ['#f59e0b', '#3b82f6', '#22c55e'],
-        borderWidth: 0,
-        data: [reportedCount, processingCount, completedCount]
-      }
-    ]
-  }
-})
-
-const barChartData = computed(() => {
+const locationSummaryList = computed(() => {
   const sourceData = rawAllLaporan.value.length > 0 ? rawAllLaporan.value : laporanList.value
-
   const locationCounts = {}
+  
   sourceData.forEach(item => {
     const loc = item.location?.name || 'Lainnya'
     locationCounts[loc] = (locationCounts[loc] || 0) + 1
   })
 
-  return {
-    labels: Object.keys(locationCounts),
-    datasets: [
-      {
-        label: 'Jumlah Kerusakan',
-        backgroundColor: '#3b82f6',
-        borderRadius: 6,
-        data: Object.values(locationCounts)
-      }
-    ]
-  }
+  return Object.keys(locationCounts)
+    .map(name => ({ name, total: locationCounts[name] }))
+    .sort((a, b) => b.total - a.total)
 })
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'bottom',
-      labels: { color: '#94a3b8', font: { size: 12 } }
-    }
-  }
-}
-
-const barOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false }
-  },
-  scales: {
-    x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
-    y: {
-      ticks: { color: '#94a3b8', stepSize: 1 },
-      grid: { color: '#334155' },
-      beginAtZero: true
-    }
-  }
-}
 
 const bukaRekamJejak = async (report) => {
   selectedReport.value = report
@@ -342,10 +308,6 @@ const gantiStatusFilter = (status) => {
   if (statusSelected.value === status) return
   statusSelected.value = status
   fetchLaporanBarang()
-}
-
-const bukaFormLaporan = () => {
-  router.push('/lapor-kerusakan')
 }
 
 const formatStatus = (status) => {
@@ -448,7 +410,331 @@ onMounted(() => {
   color: #64748b;
   font-size: 13px;
 }
+.summary-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
 
+.summary-card {
+  background: #1e293b; /* Sesuaikan warna card */
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #334155;
+}
+
+.summary-card h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #f8fafc;
+}
+
+.status-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.stat-value {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.location-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.location-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: #0f172a;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.loc-badge {
+  background: #2563eb;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.summary-loading, .summary-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+/* Styling Rekam Jejak Ala E-Commerce / Ekspedisi */
+.ecommerce-timeline {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+.track-item {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.track-item:last-child {
+  padding-bottom: 0;
+}
+
+/* Node, Dot, dan Garis Kurir */
+.track-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.track-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #64748b; /* Warna default titik */
+  border: 2px solid #1e293b;
+  z-index: 2;
+  margin-top: 4px;
+}
+
+/* Status paling baru (index 0) dikasih warna hijau khas paket sukses/proses aktif */
+.is-latest .track-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  width: 14px;
+  height: 14px;
+}
+
+.track-line {
+  width: 2px;
+  background: #334155;
+  position: absolute;
+  top: 16px;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Kotak Detail Tracking */
+.track-detail {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.is-latest .track-detail {
+  border-color: #22c55e55;
+  background: #0f172a88;
+}
+
+.track-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.track-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.track-note {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin: 0.2rem 0;
+  background: #1e293b;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.track-handler {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* --- ANIMASI GARIS PANJANG / TRACK LINE BERJALAN --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+.animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+.animate-scale-up { animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes growLine {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes dropDot {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Modifikasi bagian Node & Garis Kurir */
+.track-item {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.track-item:last-child {
+  padding-bottom: 0;
+}
+
+.track-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Titik / Dot dikasih efek pop-up berurutan */
+.track-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #64748b;
+  border: 2px solid #1e293b;
+  z-index: 2;
+  margin-top: 4px;
+  animation: dropDot 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.is-latest .track-dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  width: 14px;
+  height: 14px;
+}
+
+/* ANIMASI GARIS PANJANG NYA DISINI, BRO! */
+.track-line {
+  width: 2px;
+  background: linear-gradient(to bottom, #22c55e, #334155); /* Efek gradasi jalur aktif */
+  position: absolute;
+  top: 18px;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: growLine 0.6s ease-out forwards;
+  transform-origin: top;
+}
+
+/* Kotak Detail Tracking dikasih efek geser dikit biar manis */
+.track-detail {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.is-latest .track-detail {
+  border-color: #22c55e55;
+  background: #0f172a88;
+}
+
+.track-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.track-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.track-note {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  margin: 0.2rem 0;
+  background: #1e293b;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.track-handler {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
 /* Toolbar */
 .toolbar-section { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
 @media (min-width: 768px) {
