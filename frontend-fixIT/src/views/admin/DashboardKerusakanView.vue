@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-wrapper">
     <!-- Header Dashboard Admin -->
-    <header class="dashboard-header">
+    <header class="dashboard-header animate-fade-in">
       <div>
         <div class="brand-tag admin-tag">🔧 FixIT ADMIN & TEKNISI</div>
         <h1 class="title">Panel Kelola Perbaikan Fasilitas</h1>
@@ -10,7 +10,7 @@
     </header>
 
     <!-- Stat Cards Summary -->
-    <section class="stats-grid">
+    <section class="stats-grid animate-slide-up">
       <div class="stat-card">
         <span class="stat-icon">📑</span>
         <div>
@@ -42,7 +42,7 @@
     </section>
 
     <!-- Toolbar Filters -->
-    <section class="toolbar-section">
+    <section class="toolbar-section animate-slide-up">
       <div class="search-input-group">
         <span class="search-icon">🔍</span>
         <input
@@ -67,12 +67,12 @@
 
     <!-- State Loading -->
     <div v-if="isLoading" class="state-container">
-      <div class="spinner"></div>
-      <p>Memuat daftar antrean pekerjaan teknisi...</p>
+      <div class="spinner-pulse"></div>
+      <p class="loading-text">Memuat daftar antrean pekerjaan teknisi...</p>
     </div>
 
     <!-- State Error -->
-    <div v-else-if="errorMessage" class="state-container error-box">
+    <div v-else-if="errorMessage" class="state-container error-box animate-scale-up">
       <p>🚨 {{ errorMessage }}</p>
       <button class="btn-retry" @click="fetchLaporanAdmin">Coba Lagi</button>
     </div>
@@ -80,9 +80,10 @@
     <!-- Admin Feed List -->
     <main v-else-if="laporanList.length > 0" class="reports-feed">
       <article 
-        v-for="item in laporanList" 
+        v-for="(item, index) in laporanList" 
         :key="item.id" 
-        class="report-card"
+        class="report-card animate-stagger"
+        :style="{ '--stagger-index': index }"
       >
         <!-- Header Card: Lokasi & ID Laporan -->
         <div class="card-header">
@@ -129,7 +130,7 @@
               <label>Update Status:</label>
               <select 
                 :value="item.status" 
-                @change="updateStatusLaporan(item, $event.target.value)"
+                @change="handleStatusChange(item, $event.target.value)"
                 :disabled="updatingId === item.id"
                 class="select-status"
               >
@@ -151,7 +152,7 @@
         </div>
       </article>
 
-      <!-- 🆕 Kontrol Navigasi Halaman -->
+      <!-- Kontrol Navigasi Halaman -->
       <div v-if="lastPage > 1" class="pagination-controls">
         <button class="btn-page" @click="prevPage" :disabled="currentPage === 1">
           ← Sebelumnya
@@ -166,15 +167,15 @@
     </main>
 
     <!-- Empty State -->
-    <div v-else class="state-container empty-box">
-      <div class="empty-icon">📂</div>
+    <div v-else class="state-container empty-box animate-scale-up">
+      <div class="empty-icon bounce-animation">📂</div>
       <h3>Tidak Ada Antrean Pekerjaan</h3>
       <p>Belum ada laporan kerusakan yang perlu ditangani untuk kategori ini.</p>
     </div>
 
     <!-- Modal Input/Edit Catatan Teknisi -->
-    <div v-if="activeReportForNote" class="modal-backdrop" @click.self="activeReportForNote = null">
-      <div class="modal-card">
+    <div v-if="activeReportForNote" class="modal-backdrop animate-fade-in" @click.self="activeReportForNote = null">
+      <div class="modal-card animate-scale-up">
         <button class="modal-close" @click="activeReportForNote = null">✕</button>
         <h3>Catatan Teknisi: {{ activeReportForNote.title }}</h3>
         <p class="modal-sub">Berikan keterangan proses pengerjaan, estimasi, atau info penggantian sparepart.</p>
@@ -197,17 +198,62 @@
         </form>
       </div>
     </div>
+
+    <!-- 📸 MODAL UPLOAD BUKTI FOTO SELESAI (BEFORE-AFTER) -->
+    <div v-if="showCompleteModal" class="modal-backdrop animate-fade-in" @click.self="showCompleteModal = false">
+      <div class="modal-card animate-scale-up">
+        <button class="modal-close" @click="showCompleteModal = false">✕</button>
+        <h2>📸 Upload Bukti Perbaikan</h2>
+        <p class="modal-sub">
+          Barang: <strong>{{ reportToComplete?.title }}</strong> (Wajib unggah foto bukti perbaikan)
+        </p>
+        
+        <div class="upload-section">
+          <label class="upload-dropzone">
+            <input 
+              type="file" 
+              multiple 
+              accept="image/png, image/jpeg, image/jpg" 
+              @change="handleCompleteFilesChange" 
+              class="file-input-hidden"
+            />
+            <span class="upload-icon">📁</span>
+            <span>Klik untuk pilih foto bukti (Maks. 5 foto, max 2MB)</span>
+          </label>
+
+          <p v-if="completeErrorMsg" class="error-text">⚠️ {{ completeErrorMsg }}</p>
+
+          <div v-if="completeImagePreviews.length > 0" class="preview-grid">
+            <div v-for="(img, idx) in completeImagePreviews" :key="idx" class="preview-item">
+              <img :src="img" alt="Preview Bukti" />
+              <button type="button" class="remove-img-btn" @click="removeCompleteImage(idx)">✕</button>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="showCompleteModal = false">Batal</button>
+            <button 
+              type="button" 
+              class="btn-save" 
+              :disabled="isCompleting || completeFiles.length === 0"
+              @click="submitCompleteReport"
+            >
+              {{ isCompleting ? 'Mengunggah...' : 'Konfirmasi Selesai ✅' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import api from '../../utils/api'
 
 const router = useRouter()
 
-// ─── State Management ──────────────────────────────────────
 const laporanList          = ref([])
 const isLoading            = ref(false)
 const errorMessage         = ref(null)
@@ -219,10 +265,18 @@ const tempNote             = ref('')
 const isSavingNote         = ref(false)
 const adminUser            = ref({})
 
-// 🆕 State pagination
+// State pagination
 const currentPage           = ref(1)
 const lastPage              = ref(1)
 const totalReports          = ref(0)
+
+// State Modal Selesai (Upload Bukti Foto)
+const showCompleteModal     = ref(false)
+const reportToComplete      = ref(null)
+const completeFiles         = ref([])
+const completeImagePreviews = ref([])
+const isCompleting          = ref(false)
+const completeErrorMsg      = ref('')
 
 const stats = reactive({
   total: 0,
@@ -240,7 +294,6 @@ const listStatus = [
   { label: 'Ditolak',       value: 'rejected' }
 ]
 
-// ─── Fetch Admin Data & Stats ──────────────────────────────
 const fetchLaporanAdmin = async () => {
   isLoading.value = true
   errorMessage.value = null
@@ -250,12 +303,11 @@ const fetchLaporanAdmin = async () => {
       params: {
         keyword: searchQuery.value.trim() || undefined,
         status: statusSelected.value !== 'semua' ? statusSelected.value : undefined,
-        page: currentPage.value,   // 🆕
-        per_page: 10                 // 🆕
+        page: currentPage.value,
+        per_page: 10
       }
     })
 
-    // 🆕 Struktur berubah karena pagination: array laporan ada di data.data
     const paginationData = response.data?.data
     const rawData = paginationData?.data || []
 
@@ -277,14 +329,12 @@ const fetchLaporanAdmin = async () => {
 }
 
 const calculateStats = (data) => {
-  // 🆕 total pakai totalReports (dari backend), bukan data.length (cuma 1 halaman)
   stats.total = totalReports.value
   stats.pending = data.filter(i => i.status === 'reported').length
   stats.proses = data.filter(i => i.status === 'processing').length
   stats.selesai = data.filter(i => i.status === 'completed').length
 }
 
-// ─── 🆕 Navigasi Halaman ────────────────────────────────────
 const goToPage = (page) => {
   if (page < 1 || page > lastPage.value) return
   currentPage.value = page
@@ -294,10 +344,24 @@ const goToPage = (page) => {
 const nextPage = () => goToPage(currentPage.value + 1)
 const prevPage = () => goToPage(currentPage.value - 1)
 
-// ─── Actions: Update Status & Notes ────────────────────────
-const updateStatusLaporan = async (item, newStatus) => {
+// Intervensi Status Dropdown
+const handleStatusChange = (item, newStatus) => {
   if (item.status === newStatus) return
 
+  // Jika diubah ke completed, tahan & buka modal upload bukti foto
+  if (newStatus === 'completed') {
+    reportToComplete.value = item
+    completeFiles.value = []
+    completeImagePreviews.value = []
+    completeErrorMsg.value = ''
+    showCompleteModal.value = true
+    return
+  }
+
+  updateStatusLaporan(item, newStatus)
+}
+
+const updateStatusLaporan = async (item, newStatus) => {
   updatingId.value = item.id
   try {
     await api.patch(`/reports/${item.id}`, {
@@ -310,6 +374,65 @@ const updateStatusLaporan = async (item, newStatus) => {
     alert('Gagal memperbarui status: ' + (err.response?.data?.message || 'Terjadi kesalahan server'))
   } finally {
     updatingId.value = null
+  }
+}
+
+// Handler Upload Foto Bukti Selesai
+const handleCompleteFilesChange = (e) => {
+  const files = Array.from(e.target.files)
+  if (files.length + completeFiles.value.length > 5) {
+    completeErrorMsg.value = 'Maksimal 5 foto bukti yang dapat diunggah.'
+    return
+  }
+  completeErrorMsg.value = ''
+
+  files.forEach(file => {
+    completeFiles.value.push(file)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      completeImagePreviews.value.push(e.target.result)
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+const removeCompleteImage = (index) => {
+  completeFiles.value.splice(index, 1)
+  completeImagePreviews.value.splice(index, 1)
+}
+
+const submitCompleteReport = async () => {
+  if (!reportToComplete.value) return
+
+  if (completeFiles.value.length === 0) {
+    completeErrorMsg.value = 'Foto bukti perbaikan wajib diunggah!'
+    return
+  }
+
+  isCompleting.value = true
+  const reportId = reportToComplete.value.id
+
+  try {
+    const formData = new FormData()
+    formData.append('status', 'completed')
+    formData.append('note', 'Laporan telah diselesaikan dengan bukti foto perbaikan.')
+    
+    completeFiles.value.forEach((file) => {
+      formData.append('images[]', file)
+    })
+
+    await api.post(`/reports/${reportId}?_method=PATCH`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    showCompleteModal.value = false
+    await fetchLaporanAdmin()
+  } catch (err) {
+    completeErrorMsg.value = err.response?.data?.message || 'Gagal menyelesaikan laporan.'
+  } finally {
+    isCompleting.value = false
   }
 }
 
@@ -340,12 +463,11 @@ const simpanCatatanTeknisi = async () => {
   }
 }
 
-// ─── Utility & Debounce ───────────────────────────────────
 let debounceTimer = null
 const handleSearch = () => {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    currentPage.value = 1   // 🆕 reset ke halaman 1 tiap kali search berubah
+    currentPage.value = 1
     fetchLaporanAdmin()
   }, 400)
 }
@@ -353,14 +475,8 @@ const handleSearch = () => {
 const gantiStatusFilter = (status) => {
   if (statusSelected.value === status) return
   statusSelected.value = status
-  currentPage.value = 1   // 🆕 reset ke halaman 1 tiap kali filter berubah
+  currentPage.value = 1
   fetchLaporanAdmin()
-}
-
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  router.push('/login')
 }
 
 const formatStatus = (status) => {
@@ -383,7 +499,6 @@ const formatTanggal = (dateString) => {
   })
 }
 
-// ─── Lifecycle ─────────────────────────────────────────────
 onMounted(() => {
   const savedUser = localStorage.getItem('user')
   if (savedUser) {
@@ -1017,6 +1132,75 @@ onMounted(() => {
   font-size: 13px;
   color: #718096;
   font-weight: 600;
+}
+.upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #475569;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: #0f172a;
+  cursor: pointer;
+  text-align: center;
+  color: #94a3b8;
+  margin: 1rem 0;
+  transition: border-color 0.2s;
+}
+
+.upload-dropzone:hover {
+  border-color: #3b82f6;
+  color: #e2e8f0;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.preview-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.preview-item {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-img-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
 }
 
 .btn-save:hover { background: #1d4ed8; }

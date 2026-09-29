@@ -180,8 +180,24 @@
                 </div>
 
                 <p v-if="update.note" class="track-note">
-                  {{ update.note }}
+                  "{{ update.note }}"
                 </p>
+
+                <!-- 🖼️ FOTO BUKTI DARI ADMIN / TEKNISI -->
+                <div v-if="update.images && update.images.length > 0" class="update-images-container">
+                  <span class="proof-label">📸 Foto Bukti Pengerjaan:</span>
+                  <div class="proof-grid">
+                    <img 
+                      v-for="img in update.images" 
+                      :key="img.id" 
+                      :src="img.image_url" 
+                      alt="Bukti Perbaikan" 
+                      class="proof-thumb"
+                      @click="bukaZoomFoto(img.image_url)"
+                      title="Klik untuk memperbesar"
+                    />
+                  </div>
+                </div>
 
                 <div class="track-handler">
                   👤 Petugas/Admin: <strong>{{ update.admin?.name || 'Sistem Otomatis' }}</strong>
@@ -194,6 +210,14 @@
             <p>ℹ️ Belum ada riwayat perbaikan atau perubahan status untuk laporan ini.</p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 🔍 MODAL ZOOM / PERBESAR FOTO -->
+    <div v-if="zoomedImgUrl" class="modal-backdrop zoom-backdrop animate-fade-in" @click.self="tutupZoomFoto">
+      <div class="zoom-card animate-scale-up">
+        <button class="modal-close zoom-close" @click="tutupZoomFoto">✕</button>
+        <img :src="zoomedImgUrl" alt="Zoomed Bukti Perbaikan" class="zoomed-image" />
       </div>
     </div>
   </div>
@@ -217,6 +241,9 @@ const selectedReport   = ref(null)
 const historyUpdates   = ref([])
 const isLoadingHistory = ref(false)
 const historyError     = ref(null)
+
+// State Zoom Foto
+const zoomedImgUrl     = ref(null)
 
 const listStatus = [
   { label: 'Semua',        value: 'semua' },
@@ -294,6 +321,15 @@ const bukaRekamJejak = async (report) => {
 const tutupModal = () => {
   selectedReport.value = null
   historyUpdates.value = []
+}
+
+// Handler Zoom Foto
+const bukaZoomFoto = (url) => {
+  zoomedImgUrl.value = url
+}
+
+const tutupZoomFoto = () => {
+  zoomedImgUrl.value = null
 }
 
 let debounceTimer = null
@@ -826,6 +862,86 @@ onMounted(() => {
 .spinner {
   width: 24px; height: 24px; border: 3px solid #334155; border-top-color: #3b82f6;
   border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 8px;
+}
+
+/* Styling Grid Foto Bukti Pengerjaan di Timeline */
+.update-images-container {
+  margin-top: 0.5rem;
+  background: #1e293b;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  border: 1px dashed #475569;
+}
+
+.proof-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.proof-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.proof-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.proof-thumb:hover {
+  transform: scale(1.05);
+  border-color: #3b82f6;
+}
+
+/* Modal Zoom / Perbesar Foto */
+.zoom-backdrop {
+  background: rgba(0, 0, 0, 0.85) !important;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-card {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  padding: 1rem;
+}
+
+.zoomed-image {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  display: block;
+  margin: 0 auto;
+}
+
+.zoom-close {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
